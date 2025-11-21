@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>wheeltec_grasp_mvp</name>
+  <version>0.1.0</version>
+  <description>Grasp planner MVP for ArUco-based end-effector camera</description>
+  <maintainer email="dev@example.com">dev</maintainer>
+  <license>Apache-2.0</license>
+  <buildtool_depend>ament_python</buildtool_depend>
+  <build_type>ament_python</build_type>
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
+  <exec_depend>tf_transformations</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>ament_index_python</exec_depend>
+</package>

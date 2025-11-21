@@ -1,0 +1,14 @@
+[Unit]
+Description=ROS 2 RDKX5 Bringup
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/wheeltec_ros2
+ExecStart=/home/ubuntu/wheeltec_ros2/autostart/launch_rdkx5.sh
+Restart=on-failure
+Environment=RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+
+[Install]
+WantedBy=multi-user.target
