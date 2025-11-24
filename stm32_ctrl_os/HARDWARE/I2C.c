@@ -3,22 +3,22 @@
 Function: IIC pin initialization
 Input   : none
 Output  : none
-º¯Êý¹¦ÄÜ£ºIICÒý½Å³õÊ¼»¯
-Èë¿Ú²ÎÊý£ºÎÞ
-·µ»Ø  Öµ£ºÎÞ
+ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ü£ï¿½IICï¿½ï¿½ï¿½Å³ï¿½Ê¼ï¿½ï¿½
+ï¿½ï¿½Ú²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ï¿½ï¿½ï¿½ï¿½  Öµï¿½ï¿½ï¿½ï¿½
 **************************************************************************/
 void I2C_GPIOInit(void)
 {
 	
 	GPIO_InitTypeDef  GPIO_InitStructure;
-  RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOB, ENABLE);//Ê¹ÄÜGPIOBÊ±ÖÓ
+  RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOB, ENABLE);
 
   GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10|GPIO_Pin_11;
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;//ÆÕÍ¨Êä³öÄ£Ê½
-  GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;//ÍÆÍìÊä³ö
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;//ï¿½ï¿½Í¨ï¿½ï¿½ï¿½Ä£Ê½
+  GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;//100MHz
-  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;//ÉÏÀ­
-  GPIO_Init(GPIOB, &GPIO_InitStructure);//³õÊ¼»¯
+  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;//ï¿½ï¿½ï¿½ï¿½
+  GPIO_Init(GPIOB, &GPIO_InitStructure);
 
 	IIC_SCL=1;
 	IIC_SDA=1;
@@ -29,13 +29,13 @@ void I2C_GPIOInit(void)
 Function: Simulate IIC start signal
 Input   : none
 Output  : none
-º¯Êý¹¦ÄÜ£ºÄ£ÄâIICÆðÊ¼ÐÅºÅ
-Èë¿Ú²ÎÊý£ºÎÞ
-·µ»Ø  Öµ£ºÎÞ
+ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ü£ï¿½Ä£ï¿½ï¿½IICï¿½ï¿½Ê¼ï¿½Åºï¿½
+ï¿½ï¿½Ú²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ï¿½ï¿½ï¿½ï¿½  Öµï¿½ï¿½ï¿½ï¿½
 **************************************************************************/
 void I2C_Start(void)
 {
-	SDA_OUT();     //sdaÏßÊä³ö
+	SDA_OUT();     //sdaï¿½ï¿½ï¿½ï¿½ï¿½
 	IIC_SDA=1;
 	if(!READ_SDA)return ;	
 	IIC_SCL=1;
@@ -43,7 +43,7 @@ void I2C_Start(void)
  	IIC_SDA=0;//START:when CLK is high,DATA change form high to low 
 	if(READ_SDA)return ;
 	delay_us(1);
-	IIC_SCL=0;//Ç¯×¡I2C×ÜÏß£¬×¼±¸·¢ËÍ»ò½ÓÊÕÊý¾Ý 
+	IIC_SCL=0;//Ç¯×¡I2Cï¿½ï¿½ï¿½ß£ï¿½×¼ï¿½ï¿½ï¿½ï¿½ï¿½Í»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 
 	return ;
 }
 
@@ -51,18 +51,18 @@ void I2C_Start(void)
 Function: Analog IIC end signal
 Input   : none
 Output  : none
-º¯Êý¹¦ÄÜ£ºÄ£ÄâIIC½áÊøÐÅºÅ
-Èë¿Ú²ÎÊý£ºÎÞ
-·µ»Ø  Öµ£ºÎÞ
+ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ü£ï¿½Ä£ï¿½ï¿½IICï¿½ï¿½ï¿½ï¿½ï¿½Åºï¿½
+ï¿½ï¿½Ú²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ï¿½ï¿½ï¿½ï¿½  Öµï¿½ï¿½ï¿½ï¿½
 **************************************************************************/
 void I2C_Stop(void)
 {
-	SDA_OUT();//sdaÏßÊä³ö
+	SDA_OUT();//sdaï¿½ï¿½ï¿½ï¿½ï¿½
 	IIC_SCL=0;
 	IIC_SDA=0;//STOP:when CLK is high DATA change form low to high
  	delay_us(1);
 	IIC_SCL=1; 
-	IIC_SDA=1;//·¢ËÍI2C×ÜÏß½áÊøÐÅºÅ
+	IIC_SDA=1;//ï¿½ï¿½ï¿½ï¿½I2Cï¿½ï¿½ï¿½ß½ï¿½ï¿½ï¿½ï¿½Åºï¿½
 	delay_us(1);	
 }
 
@@ -71,7 +71,7 @@ void I2C_Stop(void)
 bool I2C_WaiteForAck(void)
 {
 	u8 ucErrTime=0;
-	SDA_IN();      //SDAÉèÖÃÎªÊäÈë  
+	SDA_IN();      //SDAï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½ï¿½ï¿½  
 	IIC_SDA=1;
 	delay_us(1);	   
 	IIC_SCL=1;
@@ -86,7 +86,7 @@ bool I2C_WaiteForAck(void)
 		}
 	  delay_us(1);
 	}
-	IIC_SCL=0;//Ê±ÖÓÊä³ö0 	   
+	IIC_SCL=0;//Ê±ï¿½ï¿½ï¿½ï¿½ï¿½0 	   
 	return 1;
 }
 
@@ -94,9 +94,9 @@ bool I2C_WaiteForAck(void)
 Function: IIC response
 Input   : none
 Output  : none
-º¯Êý¹¦ÄÜ£ºIICÓ¦´ð
-Èë¿Ú²ÎÊý£ºÎÞ
-·µ»Ø  Öµ£ºÎÞ
+ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ü£ï¿½IICÓ¦ï¿½ï¿½
+ï¿½ï¿½Ú²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ï¿½ï¿½ï¿½ï¿½  Öµï¿½ï¿½ï¿½ï¿½
 **************************************************************************/
 void I2C_Ack(void)
 {
@@ -113,9 +113,9 @@ void I2C_Ack(void)
 Function: IIC don't reply
 Input   : none
 Output  : none
-º¯Êý¹¦ÄÜ£ºIIC²»Ó¦´ð
-Èë¿Ú²ÎÊý£ºÎÞ
-·µ»Ø  Öµ£ºÎÞ
+ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ü£ï¿½IICï¿½ï¿½Ó¦ï¿½ï¿½
+ï¿½ï¿½Ú²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ï¿½ï¿½ï¿½ï¿½  Öµï¿½ï¿½ï¿½ï¿½
 **************************************************************************/ 
 void I2C_NAck(void)
 {
@@ -164,15 +164,15 @@ bool I2C_WriteBits(uint8_t DevAddr, uint8_t RegAddr, uint8_t BitStart, uint8_t L
 Function: IIC sends a bit
 Input   : none
 Output  : none
-º¯Êý¹¦ÄÜ£ºIIC·¢ËÍÒ»¸öÎ»
-Èë¿Ú²ÎÊý£ºÎÞ
-·µ»Ø  Öµ£ºÎÞ
+ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ü£ï¿½IICï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½Î»
+ï¿½ï¿½Ú²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ï¿½ï¿½ï¿½ï¿½  Öµï¿½ï¿½ï¿½ï¿½
 **************************************************************************/
 void I2C_WriteByte(uint8_t Data)
 {
     u8 t;   
 	SDA_OUT(); 	    
-    IIC_SCL=0;//À­µÍÊ±ÖÓ¿ªÊ¼Êý¾Ý´«Êä
+    IIC_SCL=0;//ï¿½ï¿½ï¿½ï¿½Ê±ï¿½Ó¿ï¿½Ê¼ï¿½ï¿½ï¿½Ý´ï¿½ï¿½ï¿½
     for(t=0;t<8;t++)
     {              
         IIC_SDA=(Data&0x80)>>7;
@@ -229,9 +229,9 @@ bool I2C_WriteBuff(uint8_t DevAddr, uint8_t RegAddr, uint8_t Num, uint8_t *pBuff
 Function: IIC reads a bit
 Input   : none
 Output  : none
-º¯Êý¹¦ÄÜ£ºIIC¶ÁÈ¡Ò»¸öÎ»
-Èë¿Ú²ÎÊý£ºÎÞ
-·µ»Ø  Öµ£ºÎÞ
+ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ü£ï¿½IICï¿½ï¿½È¡Ò»ï¿½ï¿½Î»
+ï¿½ï¿½Ú²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ï¿½ï¿½ï¿½ï¿½  Öµï¿½ï¿½ï¿½ï¿½
 **************************************************************************/
 uint8_t I2C_ReadByte(uint8_t Ack)
 {
@@ -319,32 +319,32 @@ bool I2C_ReadBuff(uint8_t DevAddr, uint8_t RegAddr, uint8_t Num, uint8_t *pBuff)
 
 ///**************************************************************************
 //Function: IIC continuous reading data
-//Input   : dev£ºTarget device IIC address£»reg:Register address£»
-//					length£ºNumber of bytes£»*data:The pointer where the read data will be stored
-//Output  : count£ºNumber of bytes read out-1
-//º¯Êý¹¦ÄÜ£ºIICÁ¬Ðø¶ÁÊý¾Ý
-//Èë¿Ú²ÎÊý£ºdev£ºÄ¿±êÉè±¸IICµØÖ·£»reg:¼Ä´æÆ÷µØÖ·£»length£º×Ö½ÚÊý£»
-//					*data:¶Á³öµÄÊý¾Ý½«Òª´æ·ÅµÄÖ¸Õë
-//·µ»Ø  Öµ£ºcount£º¶Á³öÀ´µÄ×Ö½ÚÊýÁ¿-1
+//Input   : devï¿½ï¿½Target device IIC addressï¿½ï¿½reg:Register addressï¿½ï¿½
+//					lengthï¿½ï¿½Number of bytesï¿½ï¿½*data:The pointer where the read data will be stored
+//Output  : countï¿½ï¿½Number of bytes read out-1
+//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ü£ï¿½IICï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+//ï¿½ï¿½Ú²ï¿½ï¿½ï¿½ï¿½ï¿½devï¿½ï¿½Ä¿ï¿½ï¿½ï¿½è±¸IICï¿½ï¿½Ö·ï¿½ï¿½reg:ï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½lengthï¿½ï¿½ï¿½Ö½ï¿½ï¿½ï¿½ï¿½ï¿½
+//					*data:ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý½ï¿½Òªï¿½ï¿½Åµï¿½Ö¸ï¿½ï¿½
+//ï¿½ï¿½ï¿½ï¿½  Öµï¿½ï¿½countï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö½ï¿½ï¿½ï¿½ï¿½ï¿½-1
 //**************************************************************************/ 
 //u8 IICreadBytes(u8 dev, u8 reg, u8 length, u8 *data){
 //    u8 count = 0;
 //	
 //	IIC_Start();
-//	IIC_Send_Byte(dev);	   //·¢ËÍÐ´ÃüÁî
+//	IIC_Send_Byte(dev);	   //ï¿½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½ï¿½ï¿½
 //	IIC_Wait_Ack();
-//	IIC_Send_Byte(reg);   //·¢ËÍµØÖ·
+//	IIC_Send_Byte(reg);   //ï¿½ï¿½ï¿½Íµï¿½Ö·
 //  IIC_Wait_Ack();	  
 //	IIC_Start();
-//	IIC_Send_Byte(dev+1);  //½øÈë½ÓÊÕÄ£Ê½	
+//	IIC_Send_Byte(dev+1);  //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä£Ê½	
 //	IIC_Wait_Ack();
 //	
 //    for(count=0;count<length;count++){
 //		 
-//		 if(count!=length-1)   data[count]=IIC_Read_Byte(1);  //´øACKµÄ¶ÁÊý¾Ý
-//		 else                  data[count]=IIC_Read_Byte(0);  //×îºóÒ»¸ö×Ö½ÚNACK
+//		 if(count!=length-1)   data[count]=IIC_Read_Byte(1);  //ï¿½ï¿½ACKï¿½Ä¶ï¿½ï¿½ï¿½ï¿½ï¿½
+//		 else                  data[count]=IIC_Read_Byte(0);  //ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½Ö½ï¿½NACK
 //	}
-//    IIC_Stop();//²úÉúÒ»¸öÍ£Ö¹Ìõ¼þ
+//    IIC_Stop();//ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½Í£Ö¹ï¿½ï¿½ï¿½ï¿½
 //    return count;
 //}
 

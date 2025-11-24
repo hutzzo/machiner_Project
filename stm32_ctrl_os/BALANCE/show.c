@@ -9,9 +9,9 @@ extern int MPU9250SensorCountA, MPU9250SensorCountB, MPU9250SensorCountC, MPU925
 Function: Read the battery voltage, buzzer alarm, start the self-test, send data to APP, OLED display task
 Input   : none
 Output  : none
-º¯Êý¹¦ÄÜ£º¶ÁÈ¡µç³ØµçÑ¹¡¢·äÃùÆ÷±¨¾¯¡¢¿ªÆô×Ô¼ì¡¢ÏòAPP·¢ËÍÊý¾Ý¡¢OLEDÏÔÊ¾ÆÁÏÔÊ¾ÈÎÎñ
-Èë¿Ú²ÎÊý£ºÎÞ
-·µ»Ø  Öµ£ºÎÞ
+ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ü£ï¿½ï¿½ï¿½È¡ï¿½ï¿½Øµï¿½Ñ¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô¼ì¡¢ï¿½ï¿½APPï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý¡ï¿½OLEDï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½
+ï¿½ï¿½Ú²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ï¿½ï¿½ï¿½ï¿½  Öµï¿½ï¿½ï¿½ï¿½
 **************************************************************************/
 int Buzzer_count=25;
 u8 oled_refresh_flag;
@@ -23,16 +23,16 @@ void show_task(void *pvParameters)
 		int i=0;
 		static int LowVoltage_1=0, LowVoltage_2=0;
 		static int Servo_adjust_timecount;
-		vTaskDelayUntil(&lastWakeTime, F2T(RATE_10_HZ));//This task runs at 10Hz //´ËÈÎÎñÒÔ10HzµÄÆµÂÊÔËÐÐ
+		vTaskDelayUntil(&lastWakeTime, F2T(RATE_10_HZ));//This task runs at 10Hz //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½10Hzï¿½ï¿½Æµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		
-		//¿ª»úÊ±·äÃùÆ÷¶ÌÔÝ·äÃù£¬¿ª»úÌáÐÑ
+		//ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		//The buzzer will beep briefly when the machine is switched on
 		if(SysVal.Time_count<50)Buzzer=1; 
 		else if(SysVal.Time_count>=51 && SysVal.Time_count<100)Buzzer=0;
 		 
 		if(LowVoltage_1==1 || LowVoltage_2==1)Buzzer_count=0;
 		if(Buzzer_count<5)Buzzer_count++;
-		if(Buzzer_count<5)Buzzer=1; //The buzzer is buzzing //·äÃùÆ÷·äÃù
+		if(Buzzer_count<5)Buzzer=1; //The buzzer is buzzing //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		else if(Buzzer_count==5)Buzzer=0;
 		
 		if(Beep_Control_Flag)
@@ -44,13 +44,13 @@ void show_task(void *pvParameters)
 				Beep_Control_Flag = 0;
 				Buzzer = 0;
 				Servo_adjust_timecount = 0;
-				OLED_Refresh_Gram(); //Ë¢ÐÂÆÁÄ»
-        OLED_Clear();  //Çå³ýÆÁÄ»
+				OLED_Refresh_Gram(); //Ë¢ï¿½ï¿½ï¿½ï¿½Ä»
+        OLED_Clear();  //ï¿½ï¿½ï¿½ï¿½ï¿½Ä»
 		    OLED_Refresh_Gram();
 			}
 		}
 		 
-		//Read the battery voltage //¶ÁÈ¡µç³ØµçÑ¹
+		//Read the battery voltage //ï¿½ï¿½È¡ï¿½ï¿½Øµï¿½Ñ¹
 		for(i=0;i<10;i++)
 		{
 			Voltage_All+=Get_battery_volt(); 
@@ -58,15 +58,15 @@ void show_task(void *pvParameters)
 		Voltage=Voltage_All/10;
 		Voltage_All=0;
 		
-		if(LowVoltage_1==1)LowVoltage_1++; //Make sure the buzzer only rings for 0.5 seconds //È·±£·äÃùÆ÷Ö»Ïì0.5Ãë
-		if(LowVoltage_2==1)LowVoltage_2++; //Make sure the buzzer only rings for 0.5 seconds //È·±£·äÃùÆ÷Ö»Ïì0.5Ãë
+		if(LowVoltage_1==1)LowVoltage_1++; //Make sure the buzzer only rings for 0.5 seconds //È·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö»ï¿½ï¿½0.5ï¿½ï¿½
+		if(LowVoltage_2==1)LowVoltage_2++; //Make sure the buzzer only rings for 0.5 seconds //È·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö»ï¿½ï¿½0.5ï¿½ï¿½
 		if(Voltage>=12.6f)Voltage=12.6f;
-		else if(10<=Voltage && Voltage<10.5f && LowVoltage_1<2)LowVoltage_1++; //10.5V, first buzzer when low battery //10.5V£¬µÍµçÁ¿Ê±·äÃùÆ÷µÚÒ»´Î±¨¾¯
-		else if(Voltage<10 && LowVoltage_1<2)LowVoltage_2++; //10V, when the car is not allowed to control, the buzzer will alarm the second time //10V£¬Ð¡³µ½ûÖ¹¿ØÖÆÊ±·äÃùÆ÷µÚ¶þ´Î±¨¾¯
+		else if(10<=Voltage && Voltage<10.5f && LowVoltage_1<2)LowVoltage_1++; //10.5V, first buzzer when low battery //10.5Vï¿½ï¿½ï¿½Íµï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½Î±ï¿½ï¿½ï¿½
+		else if(Voltage<10 && LowVoltage_1<2)LowVoltage_2++; //10V, when the car is not allowed to control, the buzzer will alarm the second time //10Vï¿½ï¿½Ð¡ï¿½ï¿½ï¿½ï¿½Ö¹ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú¶ï¿½ï¿½Î±ï¿½ï¿½ï¿½
 					
-		APP_Show();	 //Send data to the APP //ÏòAPP·¢ËÍÊý¾Ý
+		APP_Show();	 //Send data to the APP //ï¿½ï¿½APPï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		if(oled_refresh_flag) OLED_Clear(),oled_refresh_flag=0;
-		else oled_show(); //Tasks are displayed on the screen //ÏÔÊ¾ÆÁÏÔÊ¾ÈÎÎñ
+		else oled_show(); //Tasks are displayed on the screen //ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½
    }
 }  
 
@@ -74,26 +74,23 @@ void show_task(void *pvParameters)
 Function: The OLED display displays tasks
 Input   : none
 Output  : none
-º¯Êý¹¦ÄÜ£ºOLEDÏÔÊ¾ÆÁÏÔÊ¾ÈÎÎñ
-Èë¿Ú²ÎÊý£ºÎÞ
-·µ»Ø  Öµ£ºÎÞ
+ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ü£ï¿½OLEDï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½
+ï¿½ï¿½Ú²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ï¿½ï¿½ï¿½ï¿½  Öµï¿½ï¿½ï¿½ï¿½
 **************************************************************************/
 void oled_show(void)
 {  
-	///////////// usb ps2 Éè±¸²å°ÎÌáÊ¾ /////////////
+	///////////// usb ps2 ï¿½è±¸ï¿½ï¿½ï¿½ï¿½ï¿½Ê¾ /////////////
 	static u8 clear=0;
 	static u8 show_done=0;
 	
 	static int count=0;	 
 	 int Car_Mode_Show;
 	
-			Divisor_Mode=2048/CAR_NUMBER+2;
-	POT_val = Get_adc_Average(Potentiometer,10);
-		 Car_Mode_Show=(int) (POT_val/Divisor_Mode); 
-		 if(Car_Mode_Show>2)Car_Mode_Show=2;
+    Car_Mode_Show = Car_Mode;
 		 Voltage_Show=Voltage*100; 
 		 count++;
-	memset(OLED_GRAM,0, 128*8*sizeof(u8));	//GRAMÇåÁãµ«²»Á¢¼´Ë¢ÐÂ£¬·ÀÖ¹»¨ÆÁ
+	memset(OLED_GRAM,0, 128*8*sizeof(u8));	//GRAMï¿½ï¿½ï¿½ãµ«ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ë¢ï¿½Â£ï¿½ï¿½ï¿½Ö¹ï¿½ï¿½ï¿½ï¿½
 	
 	if(Check==0)
 	{
@@ -101,19 +98,19 @@ void oled_show(void)
 	{
 		if(clear) 
 		{
-			clear=0,oled_refresh_flag=1; //Ã¶¾ÙÖÐ,ÇåÆÁÏÔÊ¾ÏÂÃæÐÅÏ¢
-			return;//Ö´ÐÐ1´ÎÇåÆÁ
+			clear=0,oled_refresh_flag=1; //Ã¶ï¿½ï¿½ï¿½ï¿½,ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
+			return;//Ö´ï¿½ï¿½1ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		}
 		OLED_DrawBMP(32,1,96,7,gImage_usb_bmp);
 		OLED_ShowString(12,50,"USB Init..");
-		OLED_ShowNumber(85,50,enum_error,2,12);//Ã¶¾Ù´íÎóµÄ´ÎÊý
+		OLED_ShowNumber(85,50,enum_error,2,12);//Ã¶ï¿½Ù´ï¿½ï¿½ï¿½Ä´ï¿½ï¿½ï¿½
 		OLED_Refresh_Line();
 		show_done = 1;
 		return;
 	}
 	else if( usb_wait_EnumReady==EnumDone )
 	{
-		if(show_done) //Ã¶¾Ù³É¹¦,ÑÓÊ±ÏÔÊ¾1ÃëÏÔÊ¾ÆÁÐÅÏ¢
+		if(show_done) //Ã¶ï¿½Ù³É¹ï¿½,ï¿½ï¿½Ê±ï¿½ï¿½Ê¾1ï¿½ï¿½ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½Ï¢
 		{
 			static u8 show_delay=0;
 			if(++show_delay<RATE_10_HZ)
@@ -124,57 +121,58 @@ void oled_show(void)
 			}
 			show_done = 0;
 			show_delay=0;	
-			oled_refresh_flag = 1;//ÑÓ³ÙÍê±Ï,ÇåÆÁÏÔÊ¾Õý³£Êý¾Ý
+			oled_refresh_flag = 1;//ï¿½Ó³ï¿½ï¿½ï¿½ï¿½,ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		}
-		clear=1; //Ã¶¾ÙÍê³É,µÈ´ýÏÂ´ÎÃ¶¾ÙÊ±ÖØÐÂÇåÆÁ
+		clear=1; //Ã¶ï¿½ï¿½ï¿½ï¿½ï¿½,ï¿½È´ï¿½ï¿½Â´ï¿½Ã¶ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	}
-	///////////// usb ps2 Éè±¸²å°ÎÌáÊ¾ /////////////
+	///////////// usb ps2 ï¿½è±¸ï¿½ï¿½ï¿½ï¿½ï¿½Ê¾ /////////////
    
 	
 	 //Collect the tap information of the potentiometer, 
 	 //and display the car model to be fitted when the car starts up in real time
-	 //²É¼¯µçÎ»Æ÷µµÎ»ÐÅÏ¢£¬ÊµÊ±ÏÔÊ¾Ð¡³µ¿ª»úÊ±ÒªÊÊÅäµÄÐ¡³µÐÍºÅ
-	if(Servo_init_angle_adjust == 0)//Õý³£¿ØÖÆ£¬²»½øÈëÎ¢µ÷Ä£Ê½
+	 //ï¿½É¼ï¿½ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½Ï¢ï¿½ï¿½ÊµÊ±ï¿½ï¿½Ê¾Ð¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±Òªï¿½ï¿½ï¿½ï¿½ï¿½Ð¡ï¿½ï¿½ï¿½Íºï¿½
+	if(Servo_init_angle_adjust == 0)//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î¢ï¿½ï¿½Ä£Ê½
 	{
 
 		
-		 //if(Check==0)//The car displays normally when the self-check mode is not enabled //Ã»ÓÐ¿ªÆô×Ô¼ìÄ£Ê½Ê±Ð¡³µÕý³£ÏÔÊ¾
+		 //if(Check==0)//The car displays normally when the self-check mode is not enabled //Ã»ï¿½Ð¿ï¿½ï¿½ï¿½ï¿½Ô¼ï¿½Ä£Ê½Ê±Ð¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¾
 		 {	
 			 //The first line of the display displays the content//
-			 //ÏÔÊ¾ÆÁµÚ1ÐÐÏÔÊ¾ÄÚÈÝ//
-			 switch(Car_Mode_Show)
-			 {
-				case Mec_Car:       OLED_ShowString(0,0,"Mec "); break; 
-				case FourWheel_Car: OLED_ShowString(0,0,"4WD "); break; 
-				case Tank_Car:      OLED_ShowString(0,0,"Tank"); break; 
-			 }
+			 //ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½1ï¿½ï¿½ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½//
+             switch(Car_Mode_Show)
+             {
+                case Mec_Car:       OLED_ShowString(0,0,"Mec "); break; 
+                case FourWheel_Car: OLED_ShowString(0,0,"4WD "); break; 
+                case Tank_Car:      OLED_ShowString(0,0,"Tank"); break; 
+                case Akm_Car:       OLED_ShowString(0,0,"AKM "); break; 
+             }
 			 
 			 if(Car_Mode==Mec_Car)
 			 {
 				 //The Mec_car and omni_car show Z-axis angular velocity
-				 //ÂóÂÖ¡¢È«ÏòÂÖÐ¡³µÏÔÊ¾ZÖá½ÇËÙ¶È
+				 //ï¿½ï¿½ï¿½Ö¡ï¿½È«ï¿½ï¿½ï¿½ï¿½Ð¡ï¿½ï¿½ï¿½ï¿½Ê¾Zï¿½ï¿½ï¿½ï¿½Ù¶ï¿½
 				 OLED_ShowString(55,0,"GZ");
 				 if( imu.gyro.z<0)  OLED_ShowString(80,0,"-"),OLED_ShowNumber(90,0,-imu.gyro.z,5,12);
 				 else            OLED_ShowString(80,0,"+"),OLED_ShowNumber(90,0, imu.gyro.z,5,12);		
 			 }
-			 else if(Car_Mode==FourWheel_Car||Car_Mode==Tank_Car)
+             else if(Car_Mode==FourWheel_Car||Car_Mode==Tank_Car||Car_Mode==Akm_Car)
 			 {
 				 //Akm_Car, Diff_Car, FourWheel_Car and Tank_Car Displays gyroscope zero
-				 //°¢¿ËÂü¡¢²îËÙ¡¢ËÄÇý¡¢ÂÄ´ø³µÏÔÊ¾ÍÓÂÝÒÇÁãµã
+				 //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ù¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 				 OLED_ShowString(55,0,"BIAS");
 				 if( imu.Deviation_gyro.z<0)  OLED_ShowString(90,0,"-"),OLED_ShowNumber(100,0,-imu.Deviation_gyro.z,3,12);  //Zero-drift data of gyroscope Z axis
-				 else                      OLED_ShowString(90,0,"+"),OLED_ShowNumber(100,0, imu.Deviation_gyro.z,3,12);	//ÍÓÂÝÒÇzÖáÁãµãÆ¯ÒÆÊý¾Ý	
+				 else                      OLED_ShowString(90,0,"+"),OLED_ShowNumber(100,0, imu.Deviation_gyro.z,3,12);	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½zï¿½ï¿½ï¿½ï¿½ï¿½Æ¯ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½	
 			 }
 			 //The first line of the display displays the content//
-			 //ÏÔÊ¾ÆÁµÚ1ÐÐÏÔÊ¾ÄÚÈÝ//
+			 //ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½1ï¿½ï¿½ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½//
 			 
 
 			 //The second line of the display displays the content//
-			 //ÏÔÊ¾ÆÁµÚ2ÐÐÏÔÊ¾ÄÚÈÝ//
-			 if(Car_Mode==Mec_Car||Car_Mode==FourWheel_Car)
+			 //ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½2ï¿½ï¿½ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½//
+             if(Car_Mode==Mec_Car||Car_Mode==FourWheel_Car||Car_Mode==Akm_Car)
 			 {
 				//Mec_Car, Omni_Car and FourWheel_Car Display the target speed and current actual speed of motor A
-				//ÂóÂÖ¡¢È«ÏòÂÖ¡¢ËÄÇý³µÏÔÊ¾µç»úAµÄÄ¿±êËÙ¶ÈºÍµ±Ç°Êµ¼ÊËÙ¶È
+				//ï¿½ï¿½ï¿½Ö¡ï¿½È«ï¿½ï¿½ï¿½Ö¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½Aï¿½ï¿½Ä¿ï¿½ï¿½ï¿½Ù¶ÈºÍµï¿½Ç°Êµï¿½ï¿½ï¿½Ù¶ï¿½
 				OLED_ShowString(0,10,"A");
 				if( MOTOR_A.Target<0)	OLED_ShowString(15,10,"-"),
 															OLED_ShowNumber(20,10,-MOTOR_A.Target*1000,5,12);
@@ -190,7 +188,7 @@ void oled_show(void)
 			 else if(Car_Mode==Tank_Car)
 			 {
 				 //The Akm_Car, Diff_Car and Tank_Car show Z-axis angular velocity
-				 //°¢¿ËÂü¡¢²îËÙ¡¢Ì¹¿ËÐ¡³µÏÔÊ¾ZÖá½ÇËÙ¶È
+				 //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ù¡ï¿½Ì¹ï¿½ï¿½Ð¡ï¿½ï¿½ï¿½ï¿½Ê¾Zï¿½ï¿½ï¿½ï¿½Ù¶ï¿½
 				 OLED_ShowString(00,10,"GYRO_Z:");
 				 if( imu.gyro.z<0)  OLED_ShowString(60,10,"-"),
 												 OLED_ShowNumber(75,10,-imu.gyro.z,5,12);
@@ -198,14 +196,14 @@ void oled_show(void)
 												 OLED_ShowNumber(75,10, imu.gyro.z,5,12);			
 			 }	 
 			 //The second line of the display displays the content//
-			 //ÏÔÊ¾ÆÁµÚ2ÐÐÏÔÊ¾ÄÚÈÝ//
+			 //ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½2ï¿½ï¿½ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½//
 			 
 			 //Lines 3 and 4 of the display screen display content//
-			 //ÏÔÊ¾ÆÁµÚ3¡¢4ÐÐÏÔÊ¾ÄÚÈÝ//
-			 if(Car_Mode==Mec_Car||Car_Mode==FourWheel_Car)
+			 //ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½3ï¿½ï¿½4ï¿½ï¿½ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½//
+             if(Car_Mode==Mec_Car||Car_Mode==FourWheel_Car||Car_Mode==Akm_Car)
 			 {
 				//Mec_Car, Omni_Car and FourWheel_Car Display the target speed and current actual speed of motor B
-				//ÂóÂÖ¡¢È«ÏòÂÖ¡¢ËÄÇý³µÏÔÊ¾µç»úBµÄÄ¿±êËÙ¶ÈºÍµ±Ç°Êµ¼ÊËÙ¶È
+				//ï¿½ï¿½ï¿½Ö¡ï¿½È«ï¿½ï¿½ï¿½Ö¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½Bï¿½ï¿½Ä¿ï¿½ï¿½ï¿½Ù¶ÈºÍµï¿½Ç°Êµï¿½ï¿½ï¿½Ù¶ï¿½
 				OLED_ShowString(0,20,"B");		
 				if( MOTOR_B.Target<0)	OLED_ShowString(15,20,"-"),
 															OLED_ShowNumber(20,20,-MOTOR_B.Target*1000,5,12);
@@ -217,7 +215,7 @@ void oled_show(void)
 				else                 	OLED_ShowString(60,20,"+"),
 															OLED_ShowNumber(75,20, MOTOR_B.Encoder*1000,5,12);
 				//Mec_Car, Omni_Car and FourWheel_Car Display the target speed and current actual speed of motor C
-				//ÂóÂÖ¡¢È«ÏòÂÖ¡¢ËÄÇý³µÏÔÊ¾µç»úCµÄÄ¿±êËÙ¶ÈºÍµ±Ç°Êµ¼ÊËÙ¶È
+				//ï¿½ï¿½ï¿½Ö¡ï¿½È«ï¿½ï¿½ï¿½Ö¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½Cï¿½ï¿½Ä¿ï¿½ï¿½ï¿½Ù¶ÈºÍµï¿½Ç°Êµï¿½ï¿½ï¿½Ù¶ï¿½
 				OLED_ShowString(0,30,"C");
 				if( MOTOR_C.Target<0)	OLED_ShowString(15,30,"-"),
 															OLED_ShowNumber(20,30,- MOTOR_C.Target*1000,5,12);
@@ -232,7 +230,7 @@ void oled_show(void)
 			 else if(Car_Mode==Tank_Car)
 			 {
 				 //Akm_Car, Diff_Car and Tank_Car Display the target speed and current actual speed of motor A
-				 //°¢¿ËÂü¡¢²îËÙ¡¢ÂÄ´ø³µÏÔÊ¾µç»úAµÄÄ¿±êËÙ¶ÈºÍµ±Ç°Êµ¼ÊËÙ¶È
+				 //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ù¡ï¿½ï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½Aï¿½ï¿½Ä¿ï¿½ï¿½ï¿½Ù¶ÈºÍµï¿½Ç°Êµï¿½ï¿½ï¿½Ù¶ï¿½
 				 OLED_ShowString(0,20,"L:");
 				 if( MOTOR_A.Target<0)	OLED_ShowString(15,20,"-"),
 																OLED_ShowNumber(20,20,-MOTOR_A.Target*1000,5,12);
@@ -243,7 +241,7 @@ void oled_show(void)
 				 else                 	OLED_ShowString(60,20,"+"),
 																OLED_ShowNumber(75,20, MOTOR_A.Encoder*1000,5,12);
 				 //Akm_Car, Diff_Car and Tank_Car Display the target speed and current actual speed of motor B
-				 //°¢¿ËÂü¡¢²îËÙ¡¢ÂÄ´ø³µÏÔÊ¾µç»úBµÄÄ¿±êËÙ¶ÈºÍµ±Ç°Êµ¼ÊËÙ¶È
+				 //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ù¡ï¿½ï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½Bï¿½ï¿½Ä¿ï¿½ï¿½ï¿½Ù¶ÈºÍµï¿½Ç°Êµï¿½ï¿½ï¿½Ù¶ï¿½
 				 OLED_ShowString(0,30,"R:");
 				 if( MOTOR_B.Target<0)	OLED_ShowString(15,30,"-"),
 																OLED_ShowNumber(20,30,-MOTOR_B.Target*1000,5,12);
@@ -257,14 +255,14 @@ void oled_show(void)
 
 			 }
 			 //Lines 3 and 4 of the display screen display content//
-			 //ÏÔÊ¾ÆÁµÚ3¡¢4ÐÐÏÔÊ¾ÄÚÈÝ//
+			 //ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½3ï¿½ï¿½4ï¿½ï¿½ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½//
 			 
 			 //Line 5 of the display displays the content//
-			 //ÏÔÊ¾ÆÁµÚ5ÐÐÏÔÊ¾ÄÚÈÝ//
-			 if(Car_Mode==Mec_Car||Car_Mode==FourWheel_Car)
+			 //ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½5ï¿½ï¿½ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½//
+             if(Car_Mode==Mec_Car||Car_Mode==FourWheel_Car||Car_Mode==Akm_Car)
 			 {
 					//Mec_Car Display the target speed and current actual speed of motor D
-					//ÂóÂÖÐ¡³µÏÔÊ¾µç»úDµÄÄ¿±êËÙ¶ÈºÍµ±Ç°Êµ¼ÊËÙ¶È
+					//ï¿½ï¿½ï¿½ï¿½Ð¡ï¿½ï¿½ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½Dï¿½ï¿½Ä¿ï¿½ï¿½ï¿½Ù¶ÈºÍµï¿½Ç°Êµï¿½ï¿½ï¿½Ù¶ï¿½
 					OLED_ShowString(0,40,"D");
 					if( MOTOR_D.Target<0)	OLED_ShowString(15,40,"-"),
 																OLED_ShowNumber(20,40,- MOTOR_D.Target*1000,5,12);
@@ -280,7 +278,7 @@ void oled_show(void)
 			 else if(Car_Mode==Tank_Car)
 			 {
 				 // The Diff_Car and Tank_Car displays the PWM values of the left and right motors
-				 //²îËÙÐ¡³µ¡¢ÂÄ´ø³µÏÔÊ¾×óÓÒµç»úµÄPWMµÄÊýÖµ
+				 //ï¿½ï¿½ï¿½ï¿½Ð¡ï¿½ï¿½ï¿½ï¿½ï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½Òµï¿½ï¿½ï¿½ï¿½PWMï¿½ï¿½ï¿½ï¿½Öµ
 																 OLED_ShowString(00,40,"MA");
 				 if( MOTOR_A.Motor_Pwm<0)OLED_ShowString(20,40,"-"),
 																 OLED_ShowNumber(30,40,-MOTOR_A.Motor_Pwm,4,12);
@@ -293,9 +291,9 @@ void oled_show(void)
 																 OLED_ShowNumber(90,40, MOTOR_B.Motor_Pwm,4,12);
 			 }
 			 //Line 5 of the display displays the content//
-			 //ÏÔÊ¾ÆÁµÚ5ÐÐÏÔÊ¾ÄÚÈÝ//
+			 //ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½5ï¿½ï¿½ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½//
 				 
-			 //Displays the current control mode //ÏÔÊ¾µ±Ç°¿ØÖÆÄ£Ê½
+			 //Displays the current control mode //ï¿½ï¿½Ê¾ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½Ä£Ê½
 			 if(PS2_ON_Flag==1)         OLED_ShowString(0,50,"PS2  ");
 			 else if (APP_ON_Flag==1)   OLED_ShowString(0,50,"APP  ");
 			 else if (Remote_ON_Flag==1)OLED_ShowString(0,50,"R-C  ");
@@ -305,7 +303,7 @@ void oled_show(void)
 			 else                       OLED_ShowString(0,50,"ROS  ");
 				
 			 //Displays whether controls are allowed in the current car
-			 //ÏÔÊ¾µ±Ç°Ð¡³µÊÇ·ñÔÊÐí¿ØÖÆ
+			 //ï¿½ï¿½Ê¾ï¿½ï¿½Ç°Ð¡ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			 if(EN==1&&Flag_Stop==0)   OLED_ShowString(45,50,"O N");  
 			 else                      OLED_ShowString(45,50,"OFF"); 
 				
@@ -317,34 +315,34 @@ void oled_show(void)
 			}
 		 
 //			/* self-check related */
-//			/*×Ô¼ìÏà¹Ø*/
-//			//Display the self-check confirmation screen //ÏÔÊ¾×Ô¼ìÈ·ÈÏ½çÃæ
+//			/*ï¿½Ô¼ï¿½ï¿½ï¿½ï¿½*/
+//			//Display the self-check confirmation screen //ï¿½ï¿½Ê¾ï¿½Ô¼ï¿½È·ï¿½Ï½ï¿½ï¿½ï¿½
 //			if(Check==1&&!Checking&&Checked==0) 
 //			{
 //					OLED_ShowCheckConfirming();
 //			}
-//			//Display the interface for self-testing //ÏÔÊ¾×Ô¼ì½øÐÐ½çÃæ
+//			//Display the interface for self-testing //ï¿½ï¿½Ê¾ï¿½Ô¼ï¿½ï¿½ï¿½Ð½ï¿½ï¿½ï¿½
 //			if(Check==1&&Checking&&Checked==0) 
 //			{	
 //					OLED_ShowChecking();
 //			}	
-//			//Show the results of self-test //ÏÔÊ¾×Ô¼ì½á¹û
+//			//Show the results of self-test //ï¿½ï¿½Ê¾ï¿½Ô¼ï¿½ï¿½ï¿½
 //			if(Check==1&&Checking&&Checked==1) 
 //			{		
 //				OLED_ShowCheckResult();
 //			}
 //			/* self-check related */
-//			/*×Ô¼ìÏà¹Ø*/
+//			/*ï¿½Ô¼ï¿½ï¿½ï¿½ï¿½*/
 			
-//			//Refresh the screen //Ë¢ÐÂÆÁÄ»
+//			//Refresh the screen //Ë¢ï¿½ï¿½ï¿½ï¿½Ä»
 //			if(Check==0)OLED_Refresh_Gram();
 //			//The screen refresh rate in self-check mode is reduced by 10 times
-//			//×Ô¼ìÄ£Ê½ÏÂÆÁÄ»Ë¢ÐÂÆµÂÊ½µµÍ10±¶
+//			//ï¿½Ô¼ï¿½Ä£Ê½ï¿½ï¿½ï¿½ï¿½Ä»Ë¢ï¿½ï¿½Æµï¿½Ê½ï¿½ï¿½ï¿½10ï¿½ï¿½
 //			else {if(count>10)OLED_Refresh_Gram(),count=0;}	
 	}
-	else //Î¢µ÷Ä£Ê½ÏÔÊ¾Áù¸ö¶æ»úµÄÆ«ÒÆÖµ 
+	else //Î¢ï¿½ï¿½Ä£Ê½ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ«ï¿½ï¿½Öµ 
 	{
-				//=============µÚÒ»ÐÐ=======================//	
+				//=============ï¿½ï¿½Ò»ï¿½ï¿½=======================//	
 		OLED_ShowString(0,0,"Angle1_init:");
 		if( Moveit_Angle1_init<0)	
 		{
@@ -356,7 +354,7 @@ void oled_show(void)
 			OLED_ShowString(100,00,"+");
 			OLED_ShowNumber(110,0, Moveit_Angle1_init,3,12);
 		}
-						//=============µÚ¶þÐÐ=======================//	
+						//=============ï¿½Ú¶ï¿½ï¿½ï¿½=======================//	
 		OLED_ShowString(0,10,"Angle2_init:");
 		if( Moveit_Angle2_init<0)	
 		{
@@ -368,7 +366,7 @@ void oled_show(void)
 			OLED_ShowString(100,10,"+");
 			OLED_ShowNumber(110,10, Moveit_Angle2_init,3,12);
 		}
-				//=============µÚÈýÐÐ=======================//	
+				//=============ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½=======================//	
 		OLED_ShowString(0,20,"Angle3_init:");
 		if( Moveit_Angle3_init<0)	
 		{
@@ -380,7 +378,7 @@ void oled_show(void)
 			OLED_ShowString(100,20,"+");
 			OLED_ShowNumber(110,20, Moveit_Angle3_init,3,12);
 		}
-						//=============µÚËÄÐÐ=======================//	
+						//=============ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½=======================//	
 		OLED_ShowString(0,30,"Angle4_init:");
 		if( Moveit_Angle4_init<0)	
 		{
@@ -392,7 +390,7 @@ void oled_show(void)
 			OLED_ShowString(100,30,"+");
 			OLED_ShowNumber(110,30, Moveit_Angle4_init,3,12);
 		}
-				//=============µÚÎåÐÐ=======================//	
+				//=============ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½=======================//	
 		OLED_ShowString(0,40,"Angle5_init:");
 		if( Moveit_Angle5_init<0)	
 		{
@@ -404,7 +402,7 @@ void oled_show(void)
 			OLED_ShowString(100,40,"+");
 			OLED_ShowNumber(110,40, Moveit_Angle5_init,3,12);
 		}
-				//=============µÚÁùÐÐ=======================//	
+				//=============ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½=======================//	
 		OLED_ShowString(0,50,"Angle6_init:");
 		if( Moveit_Angle6_init<0)	
 		{
@@ -422,33 +420,34 @@ void oled_show(void)
 }
 	else
 	 {
-		 if(Proc_Flag==0)							//ÓÃ»§×Ô¼ì´úÂë
+		 if(Proc_Flag==0)							//ï¿½Ã»ï¿½ï¿½Ô¼ï¿½ï¿½ï¿½ï¿½
 		 {
-			 OLED_ShowCHinese(00, 00, "ÇëÏÈÔÄ¶ÁÊ¹ÓÃÊÖ²á");
-			 OLED_ShowCHinese(00, 16, "  µ¥»÷ÓÃ»§°´¼ü  ");
-			 OLED_ShowCHinese(00, 32, "    È·ÈÏ¿ªÊ¼    ");
+			 OLED_ShowCHinese(00, 00, "User Self-Test Guide");
+			 OLED_ShowCHinese(00, 16, "  User Operation  ");
+			 OLED_ShowCHinese(00, 32, "    Confirm Start    ");
 			 OLED_ShowString(104, 50, "0/8");
 		 }
 		 
 		 if(Proc_Flag==1)					
 		 {
 			 OLED_Show_POT();
-			 OLED_ShowCHinese12(8, 9, "Çë×ª¶¯µçÎ»Æ÷£º");
-			 switch(Car_Mode_Show)
-			 {
-				case Mec_Car:       OLED_ShowString(92,10,"Mec "); break; 
-				case FourWheel_Car: OLED_ShowString(92,10,"4WD "); break; 
-				case Tank_Car:      OLED_ShowString(92,10,"Tank"); break; 
-			 }
-			 OLED_ShowCHinese12(12, 22, "ÍË³öÇ°Ðèµ÷»ØÔ­³µÐÍ");
-			 OLED_ShowCHinese(00, 34, "  Ä£Ê½£ºµçÎ»Æ÷  ");
+             OLED_ShowCHinese12(8, 9, "Rotate Zero");
+             switch(Car_Mode_Show)
+             {
+                case Mec_Car:       OLED_ShowString(92,10,"Mec "); break; 
+                case FourWheel_Car: OLED_ShowString(92,10,"4WD "); break; 
+                case Tank_Car:      OLED_ShowString(92,10,"Tank"); break; 
+                case Akm_Car:       OLED_ShowString(92,10,"AKM "); break; 
+             }
+             OLED_ShowCHinese12(12, 22, "Reset to Zero");
+             OLED_ShowCHinese(00, 34, "  Mode Select  ");
 			 OLED_ShowString(104, 50, "1/8");
 		 }
 		 if(Proc_Flag==2)
 		 {
-			 OLED_ShowCHinese(24, 00, "¼Ü¿Õ³µÂÖºó");
-			 OLED_ShowCHinese(00, 16, "µ¥»÷¿ªÊ¼¸ßËÙ×ª¶¯");
-			 OLED_ShowCHinese(24, 32, "Ä£Ê½£ºµç»ú");
+             OLED_ShowCHinese(24, 00, "Battery OK");
+             OLED_ShowCHinese(00, 16, "Start Gyro Bias");
+             OLED_ShowCHinese(24, 32, "Mode Set");
 			 OLED_ShowString(104, 50, "2/8");
 		 }
 		 if(Proc_Flag==3)
@@ -472,18 +471,18 @@ void oled_show(void)
 																OLED_ShowNumber(90,20,-MOTOR_D.Encoder*1000,5,12);
 				else                		OLED_ShowString(70,20,"D+"),
 																OLED_ShowNumber(90,20, MOTOR_D.Encoder*1000,5,12);
-				OLED_ShowCHinese(24, 32, "Ä£Ê½£ºµç»ú");
+             OLED_ShowCHinese(24, 32, "Mode Set");
 				OLED_ShowString(104, 50, "2/8");
 		 }
 		 if(Proc_Flag==4)
 		 {
-				OLED_ShowCHinese(00, 00, "    µ¥»÷½øÈë    ");
-				OLED_ShowCHinese(00, 32, "  Ä£Ê½£ºÍÓÂÝÒÇ  ");
+             OLED_ShowCHinese(00, 00, "    Warning     ");
+             OLED_ShowCHinese(00, 32, "  Mode Running  ");
 			 OLED_ShowString(104, 50, "3/8");
 		 }
 		 if(Proc_Flag==5)
 		 {
-			 OLED_ShowCHinese(00, 00, "»Î¶¯Ð¡³µ¹Û²ìÊý¾Ý");
+			 OLED_ShowCHinese(00, 00, "ï¿½Î¶ï¿½Ð¡ï¿½ï¿½ï¿½Û²ï¿½ï¿½ï¿½ï¿½ï¿½");
 			 OLED_ShowString(00, 16, "G");
 			 if(imu.gyro.x<0)							 OLED_ShowString(16, 16, "-"),
 																	 OLED_ShowNumber(24, 16, -imu.gyro.x, 5, 12);
@@ -523,10 +522,10 @@ void oled_show(void)
 		 }
 		 if(Proc_Flag==6)
 		 {
-			 OLED_ShowCHinese(00, 00, "    µ¥»÷½øÈë    ");
-			 OLED_ShowCHinese(8, 16, "×¢Òâ»úÐµ±Û°Ú¶¯");
-			 OLED_ShowCHinese(16, 32, "Ä£Ê½£º»úÐµ±Û");
-			 OLED_ShowString(104, 50, "4/8");
+             OLED_ShowCHinese(00, 00, "    Servo Info   ");
+             OLED_ShowCHinese(8, 16, "Arm Servo Note");
+             OLED_ShowCHinese(16, 32, "Mode: AKM");
+             OLED_ShowString(104, 50, "4/8");
 		 }
 		 if(Proc_Flag==7)
 		 {
@@ -536,107 +535,108 @@ void oled_show(void)
 			 OLED_ShowString(64, 10, "4:"),OLED_ShowNumber(80, 10, Servo_Count[3], 5, 12);
 			 OLED_ShowString(00, 20, "5:"),OLED_ShowNumber(16, 20, Servo_Count[4], 5, 12);
 			 OLED_ShowString(64, 20, "6:"),OLED_ShowNumber(80, 20, Servo_Count[5], 5, 12);
-				OLED_ShowCHinese(16, 32, "Ä£Ê½£º»úÐµ±Û");
+				OLED_ShowCHinese(16, 32, "Ä£Ê½ï¿½ï¿½ï¿½ï¿½Ðµï¿½ï¿½");
 			 OLED_ShowString(104, 50, "4/8");
 		 }
 		 if(Proc_Flag==8)
 		 {
-				OLED_ShowCHinese(00, 00, "    µ¥»÷½øÈë    ");
-				OLED_ShowCHinese(00, 32, "  Ä£Ê½£º·äÃùÆ÷  ");
+             OLED_ShowCHinese(00, 00, "    Warning     ");
+             OLED_ShowCHinese(00, 32, "  Mode Running  ");
 			 OLED_ShowString(104, 50, "5/8");
 		 }
 		 if(Proc_Flag==9)
 		 {
-			 OLED_ShowCHinese(24, 16, "·äÃùÆ÷£º");
-			 if(Buzzer==1)		OLED_ShowCHinese(88, 16, "¿ª");
-			 else							OLED_ShowCHinese(88, 16, "¹Ø");
-			 OLED_ShowCHinese(00, 32, "  Ä£Ê½£º·äÃùÆ÷  ");
+			 OLED_ShowCHinese(24, 16, "Buzzer");
+			 if(Buzzer==1)		OLED_ShowCHinese(88, 16, "ON");
+			 else							OLED_ShowCHinese(88, 16, "ï¿½ï¿½");
+			 OLED_ShowCHinese(00, 32, "  Mode Running  ");
 			 OLED_ShowString(104, 50, "5/8");
 		 }
 		 if(Proc_Flag==10)
 		 {
-			 OLED_ShowCHinese(00, 00, "  ²¦¶¯Ê¹ÄÜ¿ª¹Ø  ");
-			 OLED_ShowCHinese(32, 16, "¿ª¹Ø£º");
-			 if(EN==1)					OLED_ShowCHinese(80, 16, "¿ª");
-			 else								OLED_ShowCHinese(80, 16, "¹Ø");
-			 OLED_ShowCHinese(8, 32, "Ä£Ê½£ºÊ¹ÄÜ¿ª¹Ø");
+             OLED_ShowCHinese(00, 00, "  Enable Switch  ");
+             OLED_ShowCHinese(32, 16, "State:");
+			 if(EN==1)					OLED_ShowCHinese(80, 16, "ï¿½ï¿½");
+			 else								OLED_ShowCHinese(80, 16, "ï¿½ï¿½");
+			 OLED_ShowCHinese(8, 32, "Ä£Ê½ï¿½ï¿½Ê¹ï¿½Ü¿ï¿½ï¿½ï¿½");
 			 OLED_ShowString(104, 50, "6/8");
 		 }
 		 if(Proc_Flag==11)
 		 {
-			  OLED_ShowCHinese(00, 00, "È·ÈÏÀ¶ÑÀºìµÆ³£ÁÁ");
-			  OLED_ShowCHinese(24, 16, "ºóµ¥»÷½øÈë");
-				OLED_ShowCHinese(24, 32, "Ä£Ê½£ºÀ¶ÑÀ");
+              OLED_ShowCHinese(00, 00, "Confirm Exit");
+              OLED_ShowCHinese(24, 16, "Single Step");
+            	OLED_ShowCHinese(24, 32, "Mode Info");
 			 OLED_ShowString(104, 50, "7/8");
 		 }
 		 if(Proc_Flag==12)
 		 {
-			 OLED_ShowCHinese(8, 00, "Ð¡³µÐÐ¶¯×´Ì¬£º");
-			 if(uart2_send_flag==1)					OLED_ShowCHinese(48, 16, "ÏòÇ°");
-			 else if(uart2_send_flag==2)		OLED_ShowCHinese(48, 16, "ÏòÓÒ");
-			 else if(uart2_send_flag==3)		OLED_ShowCHinese(48, 16, "Ïòºó");
-			 else if(uart2_send_flag==4)		OLED_ShowCHinese(48, 16, "Ïò×ó");
-			 else if(uart2_send_flag==5)		OLED_ShowCHinese(48, 16, "Í£Ö¹");
-//			 OLED_ShowCHinese(00, 00, "µ¥»÷·¢ËÍ");
+			 OLED_ShowCHinese(8, 00, "Car State");
+			 if(uart2_send_flag==1)					OLED_ShowCHinese(48, 16, "Forward");
+			 else if(uart2_send_flag==2)		OLED_ShowCHinese(48, 16, "Back");
+			 else if(uart2_send_flag==3)		OLED_ShowCHinese(48, 16, "Left");
+			 else if(uart2_send_flag==4)		OLED_ShowCHinese(48, 16, "Right");
+			 else if(uart2_send_flag==5)		OLED_ShowCHinese(48, 16, "Stop");
+//			 OLED_ShowCHinese(00, 00, "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½");
 //			 OLED_ShowString16(64, 00, "WHEELTEC");
-//			 OLED_ShowCHinese(00, 16, "½ÓÊÕµÄ");
+//			 OLED_ShowCHinese(00, 16, "ï¿½ï¿½ï¿½Õµï¿½");
 //			 OLED_ShowString16(48, 16, "ASCII:");
-//			 OLED_ShowNumber(96, 18, (USART2->DR), 4, 12);		//ÔÚAPP·¢ËÍµÄÊÇ×Ö·û£¬ËùÒÔÕâÀïÊ¹ÓÃAsciiÂëÏÔÊ¾
-			 OLED_ShowCHinese(24, 32, "Ä£Ê½£ºÀ¶ÑÀ");
+//			 OLED_ShowNumber(96, 18, (USART2->DR), 4, 12);		//ï¿½ï¿½APPï¿½ï¿½ï¿½Íµï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¹ï¿½ï¿½Asciiï¿½ï¿½ï¿½ï¿½Ê¾
+             OLED_ShowCHinese(24, 32, "Mode Info");
 			 OLED_ShowString(104, 50, "7/8");
 		 }
 		 if(Proc_Flag==13)
 		 {
-				OLED_ShowCHinese(8, 00, "Ê¹ÓÃÊý¾ÝÏßÁ¬½Ó");
-			  OLED_ShowCHinese(20, 16, "ÖÐ¼äµÄ");
+				OLED_ShowCHinese(8, 00, "Use USB");
+			  OLED_ShowCHinese(20, 16, "Middle");
 			  OLED_ShowString16(68, 16, "USB");
-				OLED_ShowCHinese(92,16, "¿Ú");
-				OLED_ShowCHinese(20, 32, "Ä£Ê½£º´®¿Ú");
+				OLED_ShowCHinese(92,16, "Port");
+				OLED_ShowCHinese(20, 32, "Mode Info");
 			  OLED_ShowString16(100,32, "3");
 			 OLED_ShowString(104, 50, "8/8");
 		 }
 		 if(Proc_Flag==14)
 		 {
-			 OLED_ShowCHinese(00, 00, "·¢ËÍ");
+			 OLED_ShowCHinese(00, 00, "Baud");
 			 OLED_ShowString16(36, 00, "#");
-			 OLED_ShowCHinese(48, 00, "½áÎ²µÄÊý¾Ý");
+			 OLED_ShowCHinese(48, 00, "Tail Mark");
 			 
-			 OLED_ShowCHinese(8, 16, "²¨ÌØÂÊ£º");
+			 OLED_ShowCHinese(8, 16, "Baudrate:");
 			 OLED_ShowString16(72, 16, "115200");
-//			 OLED_ShowCHinese(00, 00, "µ¥»÷·¢ËÍ");
+//			 OLED_ShowCHinese(00, 00, "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½");
 //			 OLED_ShowString16(64, 00, "WHEELTEC");
-//			 OLED_ShowCHinese(00, 16, "½ÓÊÕµÄ");
+//			 OLED_ShowCHinese(00, 16, "ï¿½ï¿½ï¿½Õµï¿½");
 //			 OLED_ShowString16(48, 16, "ASCII:");
-//			 OLED_ShowNumber(96, 18, (USART3->DR), 4, 12);		//ÔÚ´®¿ÚÖúÊÖÉÏ·¢ËÍµÄÊÇ×Ö·û£¬ËùÒÔÕâÀïÊ¹ÓÃAsciiÂëÏÔÊ¾
-			 OLED_ShowCHinese(20, 32, "Ä£Ê½£º´®¿Ú");
+//			 OLED_ShowNumber(96, 18, (USART3->DR), 4, 12);		//ï¿½Ú´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï·ï¿½ï¿½Íµï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¹ï¿½ï¿½Asciiï¿½ï¿½ï¿½ï¿½Ê¾
+			 OLED_ShowCHinese(20, 32, "Ä£Ê½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½");
 			 OLED_ShowString16(100,32, "3");
 			 OLED_ShowString(104, 50, "8/8");
 		 }
 		 if(Proc_Flag==15)
 		 {
-				OLED_ShowCHinese(00, 00, "¼´½«ÍË³öÖÊ¼ìÄ£Ê½");
-			  OLED_ShowCHinese(00, 16, "Çë×ª¶¯µçÎ»Æ÷»Øµ½");
-			  OLED_ShowCHinese(12, 32, "µ±Ç°³µÐÍ£º");
-			  switch(Car_Mode_Show)
-			  {
-					case Mec_Car:       OLED_ShowString16(92,32,"Mec "); break; 
-					case FourWheel_Car: OLED_ShowString16(92,32,"4WD "); break; 
-					case Tank_Car:      OLED_ShowString16(92,32,"Tank"); break; 
-			  }
+				OLED_ShowCHinese(00, 00, "ï¿½ï¿½ï¿½ï¿½ï¿½Ë³ï¿½ï¿½Ê¼ï¿½Ä£Ê½");
+			 OLED_ShowCHinese(00, 16, "Gyro Zero Reset");
+			 OLED_ShowCHinese(12, 32, "Current Mode:");
+              switch(Car_Mode_Show)
+              {
+                  case Mec_Car:       OLED_ShowString16(92,32,"Mec "); break; 
+                  case FourWheel_Car: OLED_ShowString16(92,32,"4WD "); break; 
+                  case Tank_Car:      OLED_ShowString16(92,32,"Tank"); break; 
+                  case Akm_Car:       OLED_ShowString16(92,32,"AKM "); break; 
+              }
 				OLED_ShowString(104, 50, "8/8");
 		 }
-		 OLED_ShowCHinese12(00, 50, "µ¥»÷¼ÌÐøË«»÷ÍË³ö");
+			 OLED_ShowCHinese12(00, 50, "Double-Click Exit");
 	 }
-			//=============Ë¢ÐÂ=======================//
+			//=============Ë¢ï¿½ï¿½=======================//
 		OLED_Refresh_Gram();	
 } 
 /**************************************************************************
 Function: Send data to the APP
 Input   : none
 Output  : none
-º¯Êý¹¦ÄÜ£ºÏòAPP·¢ËÍÊý¾Ý
-Èë¿Ú²ÎÊý£ºÎÞ
-·µ»Ø  Öµ£ºÎÞ
+ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ü£ï¿½ï¿½ï¿½APPï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ï¿½ï¿½Ú²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ï¿½ï¿½ï¿½ï¿½  Öµï¿½ï¿½ï¿½ï¿½
 **************************************************************************/
 void APP_Show(void)
 {    
@@ -644,25 +644,25 @@ void APP_Show(void)
 	 int Left_Figure,Right_Figure,Voltage_Show;
 	
 	 //The battery voltage is processed as a percentage
-	 //¶Ôµç³ØµçÑ¹´¦Àí³É°Ù·Ö±ÈÐÎÊ½
+	 //ï¿½Ôµï¿½Øµï¿½Ñ¹ï¿½ï¿½ï¿½ï¿½ï¿½É°Ù·Ö±ï¿½ï¿½ï¿½Ê½
 	 Voltage_Show=(Voltage*1000-10000)/27;
 	 if(Voltage_Show>100)Voltage_Show=100; 
 	
 	 //Wheel speed unit is converted to 0.01m/s for easy display in APP
-	 //³µÂÖËÙ¶Èµ¥Î»×ª»»Îª0.01m/s£¬·½±ãÔÚAPPÏÔÊ¾
+	 //ï¿½ï¿½ï¿½ï¿½ï¿½Ù¶Èµï¿½Î»×ªï¿½ï¿½Îª0.01m/sï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½APPï¿½ï¿½Ê¾
 	 Left_Figure=MOTOR_A.Encoder*100;  if(Left_Figure<0)Left_Figure=-Left_Figure;	
 	 Right_Figure=MOTOR_B.Encoder*100; if(Right_Figure<0)Right_Figure=-Right_Figure;
 	
 	 //Used to alternately print APP data and display waveform
-	 //ÓÃÓÚ½»Ìæ´òÓ¡APPÊý¾ÝºÍÏÔÊ¾²¨ÐÎ
+	 //ï¿½ï¿½ï¿½Ú½ï¿½ï¿½ï¿½ï¿½Ó¡APPï¿½ï¿½ï¿½Ýºï¿½ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½
 	 flag_show=!flag_show;
 	
 	 if(PID_Send==1) 
 	 {
 		 //Send parameters to the APP, the APP is displayed in the debug screen
-		 //·¢ËÍ²ÎÊýµ½APP£¬APPÔÚµ÷ÊÔ½çÃæÏÔÊ¾
+		 //ï¿½ï¿½ï¿½Í²ï¿½ï¿½ï¿½ï¿½ï¿½APPï¿½ï¿½APPï¿½Úµï¿½ï¿½Ô½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¾
 		 		printf("{C%d:%d:%d:%d:%d:%d:%d:%d:%d}$",
-		  (int)((Moveit_Angle1+1.57f)*100), //+1.57ÊÇÒòÎªµ÷²Î½çÃæ²»¿ÉÒÔÏÔÊ¾¸ºÊý£¬*100ÊÇÒòÎªµ÷²Î½çÃæ²»ÏÖÊµ¸¡µãÊýµÄµãÊý²¿·Ö
+		  (int)((Moveit_Angle1+1.57f)*100), //+1.57ï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½ï¿½Î½ï¿½ï¿½æ²»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½*100ï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½ï¿½Î½ï¿½ï¿½æ²»ï¿½ï¿½Êµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Äµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			(int)((Moveit_Angle2+1.57f)*100),
 			(int)((Moveit_Angle3+1.57f)*100),
 			(int)((Moveit_Angle4+1.57f)*100),
@@ -676,13 +676,13 @@ void APP_Show(void)
 	 else	if(flag_show==0) 
 	 {
 		 //Send parameters to the APP and the APP will be displayed on the front page
-		 //·¢ËÍ²ÎÊýµ½APP£¬APPÔÚÊ×Ò³ÏÔÊ¾
+		 //ï¿½ï¿½ï¿½Í²ï¿½ï¿½ï¿½ï¿½ï¿½APPï¿½ï¿½APPï¿½ï¿½ï¿½ï¿½Ò³ï¿½ï¿½Ê¾
 		 printf("{A%d:%d:%d:%d}$",(u8)Left_Figure,(u8)Right_Figure,Voltage_Show,(int)imu.gyro.z);
 	 }
 	 else
 	 {
 		 //Send parameters to the APP, the APP is displayed in the waveform interface
-		 //·¢ËÍ²ÎÊýµ½APP£¬APPÔÚ²¨ÐÎ½çÃæÏÔÊ¾
+		 //ï¿½ï¿½ï¿½Í²ï¿½ï¿½ï¿½ï¿½ï¿½APPï¿½ï¿½APPï¿½Ú²ï¿½ï¿½Î½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¾
 		 printf("{B%d:%d:%d}$",(int)imu.gyro.x,(int)imu.gyro.y,(int)imu.gyro.z);
 	 }
 }

@@ -8,10 +8,12 @@
 #define DATA_STK_SIZE   512 
 #define DATA_TASK_PRIO  4
 
-#define FRAME_HEADER_CAR 0X7B //¿ØÖÆµ×ÅÌÔË¶¯µÄÊý¾ÝÖ¡Í·
-#define FRAME_TAIL_CAR 0X7D //¿ØÖÆµ×ÅÌÔË¶¯µÄÊý¾ÝÖ¡Î²
-#define FRAME_HEADER_MOVEIT 0XAA //¿ØÖÆ»úÐµ±ÛÔË¶¯µÄÊý¾ÝÖ¡Í·
-#define FRAME_TAIL_MOVEIT 0XBB //¿ØÖÆ»úÐµ±ÛÔË¶¯µÄÊý¾ÝÖ¡Í·
+#define FRAME_HEADER_CAR 0X7B //ï¿½ï¿½ï¿½Æµï¿½ï¿½ï¿½ï¿½Ë¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¡Í·
+#define FRAME_TAIL_CAR 0X7D //ï¿½ï¿½ï¿½Æµï¿½ï¿½ï¿½ï¿½Ë¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¡Î²
+#define FRAME_HEADER_MOVEIT 0XAA //ï¿½ï¿½ï¿½Æ»ï¿½Ðµï¿½ï¿½ï¿½Ë¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¡Í·
+#define FRAME_TAIL_MOVEIT 0XBB //ï¿½ï¿½ï¿½Æ»ï¿½Ðµï¿½ï¿½ï¿½Ë¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¡Í·
+#define FRAME_HEADER_STEER 0xA1
+#define FRAME_TAIL_STEER   0xA2
 #define SEND_DATA_SIZE    24
 #define RECEIVE_DATA_SIZE 11
 
@@ -19,29 +21,29 @@
 #define default_mode 1
 
 /*****A structure for storing triaxial data of a gyroscope accelerometer*****/
-/*****ÓÃÓÚ´æ·ÅÍÓÂÝÒÇ¼ÓËÙ¶È¼ÆÈýÖáÊý¾ÝµÄ½á¹¹Ìå*********************************/
+/*****ï¿½ï¿½ï¿½Ú´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç¼ï¿½ï¿½Ù¶È¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÝµÄ½á¹¹ï¿½ï¿½*********************************/
 typedef struct __Mpu6050_Data_ 
 {
-	short X_data; //2 bytes //2¸ö×Ö½Ú
-	short Y_data; //2 bytes //2¸ö×Ö½Ú
-	short Z_data; //2 bytes //2¸ö×Ö½Ú
+	short X_data; //2 bytes //2ï¿½ï¿½ï¿½Ö½ï¿½
+	short Y_data; //2 bytes //2ï¿½ï¿½ï¿½Ö½ï¿½
+	short Z_data; //2 bytes //2ï¿½ï¿½ï¿½Ö½ï¿½
 }Mpu6050_Data;
 
 /*******The structure of the serial port sending data************/
-/*******´®¿Ú·¢ËÍÊý¾ÝµÄ½á¹¹Ìå*************************************/
+/*******ï¿½ï¿½ï¿½Ú·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÝµÄ½á¹¹ï¿½ï¿½*************************************/
 typedef struct _SEND_DATA_  
 {
 	unsigned char buffer[SEND_DATA_SIZE];
 	struct _Sensor_Str_
 	{
-		unsigned char Frame_Header; //1¸ö×Ö½Ú
-		short X_speed;	            //2 bytes //2¸ö×Ö½Ú
-		short Y_speed;              //2 bytes //2¸ö×Ö½Ú
-		short Z_speed;              //2 bytes //2¸ö×Ö½Ú
-		short Power_Voltage;        //2 bytes //2¸ö×Ö½Ú
-		Mpu6050_Data Accelerometer; //6 bytes //6¸ö×Ö½Ú
-		Mpu6050_Data Gyroscope;     //6 bytes //6¸ö×Ö½Ú	
-		unsigned char Frame_Tail;   //1 bytes //1¸ö×Ö½Ú
+		unsigned char Frame_Header; //1ï¿½ï¿½ï¿½Ö½ï¿½
+		short X_speed;	            //2 bytes //2ï¿½ï¿½ï¿½Ö½ï¿½
+		short Y_speed;              //2 bytes //2ï¿½ï¿½ï¿½Ö½ï¿½
+		short Z_speed;              //2 bytes //2ï¿½ï¿½ï¿½Ö½ï¿½
+		short Power_Voltage;        //2 bytes //2ï¿½ï¿½ï¿½Ö½ï¿½
+		Mpu6050_Data Accelerometer; //6 bytes //6ï¿½ï¿½ï¿½Ö½ï¿½
+		Mpu6050_Data Gyroscope;     //6 bytes //6ï¿½ï¿½ï¿½Ö½ï¿½	
+		unsigned char Frame_Tail;   //1 bytes //1ï¿½ï¿½ï¿½Ö½ï¿½
 	}Sensor_Str;
 }SEND_DATA;
 
@@ -50,11 +52,11 @@ typedef struct _RECEIVE_DATA_
 	unsigned char buffer[RECEIVE_DATA_SIZE];
 	struct _Control_Str_
 	{
-		unsigned char Frame_Header; //1 bytes //1¸ö×Ö½Ú
-		float X_speed;	            //4 bytes //4¸ö×Ö½Ú
-		float Y_speed;              //4 bytes //4¸ö×Ö½Ú
-		float Z_speed;              //4 bytes //4¸ö×Ö½Ú
-		unsigned char Frame_Tail;   //1 bytes //1¸ö×Ö½Ú
+		unsigned char Frame_Header; //1 bytes //1ï¿½ï¿½ï¿½Ö½ï¿½
+		float X_speed;	            //4 bytes //4ï¿½ï¿½ï¿½Ö½ï¿½
+		float Y_speed;              //4 bytes //4ï¿½ï¿½ï¿½Ö½ï¿½
+		float Z_speed;              //4 bytes //4ï¿½ï¿½ï¿½Ö½ï¿½
+		unsigned char Frame_Tail;   //1 bytes //1ï¿½ï¿½ï¿½Ö½ï¿½
 	}Control_Str;
 }RECEIVE_DATA;
 

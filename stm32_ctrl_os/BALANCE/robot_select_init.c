@@ -1,38 +1,41 @@
 #include "robot_select_init.h"
 
 //Initialize the robot parameter structure
-//³õÊ¼»¯»úÆ÷ÈË²ÎÊý½á¹¹Ìå
+//ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ë²ï¿½ï¿½ï¿½ï¿½á¹¹ï¿½ï¿½
 Robot_Parament_InitTypeDef  Robot_Parament; 
 /**************************************************************************
 Function: According to the potentiometer switch needs to control the car type
 Input   : none
 Output  : none
-º¯Êý¹¦ÄÜ£º¸ù¾ÝµçÎ»Æ÷ÇÐ»»ÐèÒª¿ØÖÆµÄÐ¡³µÀàÐÍ
-Èë¿Ú²ÎÊý£ºÎÞ
-·µ»Ø  Öµ£ºÎÞ
+ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ü£ï¿½ï¿½ï¿½ï¿½Ýµï¿½Î»ï¿½ï¿½ï¿½Ð»ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½Æµï¿½Ð¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ï¿½ï¿½Ú²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ï¿½ï¿½ï¿½ï¿½  Öµï¿½ï¿½ï¿½ï¿½
 **************************************************************************/
 void Robot_Select(void)
 {
 	//The ADC value is variable in segments, depending on the number of car models. Currently there are 6 car models, CAR_NUMBER=6
-  //ADCÖµ·Ö¶Î±äÁ¿£¬È¡¾öÓÚÐ¡³µÐÍºÅÊýÁ¿£¬Ä¿Ç°ÓÐ6ÖÖÐ¡³µÐÍºÅ£¬CAR_NUMBER=6
+	//ADCÖµï¿½Ö¶Î±ï¿½ï¿½ï¿½ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½Ð¡ï¿½ï¿½ï¿½Íºï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¿Ç°ï¿½ï¿½6ï¿½ï¿½Ð¡ï¿½ï¿½ï¿½ÍºÅ£ï¿½CAR_NUMBER=6
 	Divisor_Mode=2048/CAR_NUMBER+2;
-	Car_Mode=(int) ((Get_adc_Average(Potentiometer,10))/Divisor_Mode); //Collect the pin information of potentiometer //²É¼¯µçÎ»Æ÷Òý½ÅÐÅÏ¢	
+	Car_Mode=(int) ((Get_adc_Average(Potentiometer,10))/Divisor_Mode); //Collect the pin information of potentiometer //ï¿½É¼ï¿½ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢	
   if(Car_Mode>2)Car_Mode=2;
+	Car_Mode=Akm_Car;
 	
 	switch(Car_Mode)
 	{
-		case Mec_Car:       Robot_Init(MEC_wheelspacing,         MEC_axlespacing,          0,                     HALL_30F, Hall_13, Mecanum_75);            break; //Âó¿ËÄÉÄ·ÂÖÐ¡³µ
-		case FourWheel_Car: Robot_Init(Four_Mortor_wheelSpacing, Four_Mortor__axlespacing, 0,                     HALL_30F, Hall_13, Black_WheelDiameter);   break; //ËÄÇý³µ 
-		case Tank_Car:      Robot_Init(Tank_wheelSpacing,        0,                        0,                     HALL_30F, Hall_13, Tank_WheelDiameter);    break; //ÂÄ´ø³µ
+		case Mec_Car:       Robot_Init(MEC_wheelspacing,         MEC_axlespacing,          0,                     HALL_30F, Hall_13, Mecanum_75);            break; //ï¿½ï¿½ï¿½ï¿½ï¿½Ä·ï¿½ï¿½Ð¡ï¿½ï¿½
+		case FourWheel_Car: Robot_Init(Four_Mortor_wheelSpacing, Four_Mortor__axlespacing, 0,                     HALL_30F, Hall_13, Black_WheelDiameter);   break; //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 
+		case Tank_Car:      Robot_Init(Tank_wheelSpacing,        0,                        0,                     HALL_30F, Hall_13, Tank_WheelDiameter);    break; //ï¿½Ä´ï¿½ï¿½ï¿½
+		case Akm_Car:       Robot_Init(Akm_wheelspacing,         Akm_axlespacing,          0,                     HALL_30F, Hall_13, Black_WheelDiameter);   break;
 	}
 	
 	
-	//Check the parameters//×Ô¼ìÏà¹Ø²ÎÊý
+	//Check the parameters//ï¿½Ô¼ï¿½ï¿½ï¿½Ø²ï¿½ï¿½ï¿½
 	switch(Car_Mode)
   {
-	 case Mec_Car:       CheckPhrase1=8, CheckPhrase2=14; break; //Âó¿ËÄÉÄ·ÂÖÐ¡³µ
-	 case FourWheel_Car: CheckPhrase1=8, CheckPhrase2=11; break; //ËÄÇý³µ 
-	 case Tank_Car:      CheckPhrase1=4, CheckPhrase2=7;  break; //ÂÄ´ø³µ
+	 case Mec_Car:       CheckPhrase1=8, CheckPhrase2=14; break; //ï¿½ï¿½ï¿½ï¿½ï¿½Ä·ï¿½ï¿½Ð¡ï¿½ï¿½
+	 case FourWheel_Car: CheckPhrase1=8, CheckPhrase2=11; break; //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 
+	 case Tank_Car:      CheckPhrase1=4, CheckPhrase2=7;  break; //ï¿½Ä´ï¿½ï¿½ï¿½
+	 case Akm_Car:       CheckPhrase1=8, CheckPhrase2=11; break;
   }
 }
 
@@ -40,45 +43,45 @@ void Robot_Select(void)
 Function: Initialize cart parameters
 Input   : wheelspacing, axlespacing, omni_rotation_radiaus, motor_gear_ratio, Number_of_encoder_lines, tyre_diameter
 Output  : none
-º¯Êý¹¦ÄÜ£º³õÊ¼»¯Ð¡³µ²ÎÊý
-Èë¿Ú²ÎÊý£ºÂÖ¾à Öá¾à ×Ô×ª°ë¾¶ µç»ú¼õËÙ±È µç»ú±àÂëÆ÷¾«¶È ÂÖÌ¥Ö±¾¶
-·µ»Ø  Öµ£ºÎÞ
+ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ü£ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½Ð¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ï¿½ï¿½Ú²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¾ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½×ªï¿½ë¾¶ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ù±ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ì¥Ö±ï¿½ï¿½
+ï¿½ï¿½ï¿½ï¿½  Öµï¿½ï¿½ï¿½ï¿½
 **************************************************************************/
 void Robot_Init(double wheelspacing, float axlespacing, float omni_turn_radiaus, float gearratio,float Accuracy,float tyre_diameter) // 
 {
 	//wheelspacing, Mec_Car is half wheelspacing
-	//ÂÖ¾à ÂóÂÖ³µÎª°ëÂÖ¾à
+	//ï¿½Ö¾ï¿½ ï¿½ï¿½ï¿½Ö³ï¿½Îªï¿½ï¿½ï¿½Ö¾ï¿½
   Robot_Parament.WheelSpacing=wheelspacing; 
 	//axlespacing, Mec_Car is half axlespacing
-  //Öá¾à ÂóÂÖ³µÎª°ëÖá¾à	
+  //ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ö³ï¿½Îªï¿½ï¿½ï¿½ï¿½ï¿½	
   Robot_Parament.AxleSpacing=axlespacing;   
 	//Rotation radius of omnidirectional trolley
-  //È«ÏòÂÖÐ¡³µÐý×ª°ë¾¶		
+  //È«ï¿½ï¿½ï¿½ï¿½Ð¡ï¿½ï¿½ï¿½ï¿½×ªï¿½ë¾¶		
   Robot_Parament.OmniTurnRadiaus=omni_turn_radiaus; 
 	//motor_gear_ratio
-	//µç»ú¼õËÙ±È
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ù±ï¿½
   Robot_Parament.GearRatio=gearratio; 
 	//Number_of_encoder_lines
-  //±àÂëÆ÷¾«¶È(±àÂëÆ÷ÏßÊý)	
+  //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½(ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½)	
   Robot_Parament.EncoderAccuracy=Accuracy;
 	//Diameter of driving wheel
-  //Ö÷¶¯ÂÖÖ±¾¶	
+  //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö±ï¿½ï¿½	
   Robot_Parament.WheelDiameter=tyre_diameter;       
 	
 	//Encoder value corresponding to 1 turn of motor (wheel)
-	//µç»ú(³µÂÖ)×ª1È¦¶ÔÓ¦µÄ±àÂëÆ÷ÊýÖµ
+	//ï¿½ï¿½ï¿½(ï¿½ï¿½ï¿½ï¿½)×ª1È¦ï¿½ï¿½Ó¦ï¿½Ä±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµ
 	Encoder_precision=EncoderMultiples*Robot_Parament.EncoderAccuracy*Robot_Parament.GearRatio;
 	//Driving wheel circumference
-  //Ö÷¶¯ÂÖÖÜ³¤	
+  //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ü³ï¿½	
 	Wheel_perimeter=Robot_Parament.WheelDiameter*PI;
 	//wheelspacing, Mec_Car is half wheelspacing
-  //ÂÖ¾à ÂóÂÖ³µÎª°ëÂÖ¾à  
+  //ï¿½Ö¾ï¿½ ï¿½ï¿½ï¿½Ö³ï¿½Îªï¿½ï¿½ï¿½Ö¾ï¿½  
   Wheel_spacing=Robot_Parament.WheelSpacing; 
   //axlespacing, Mec_Car is half axlespacing	
-  //Öá¾à ÂóÂÖ³µÎª°ëÖá¾à	
+  //ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ö³ï¿½Îªï¿½ï¿½ï¿½ï¿½ï¿½	
 	Axle_spacing=Robot_Parament.AxleSpacing; 
 	//Rotation radius of omnidirectional trolley
-  //È«ÏòÂÖÐ¡³µÐý×ª°ë¾¶	
+  //È«ï¿½ï¿½ï¿½ï¿½Ð¡ï¿½ï¿½ï¿½ï¿½×ªï¿½ë¾¶	
 	Omni_turn_radiaus=Robot_Parament.OmniTurnRadiaus; 
 }
 

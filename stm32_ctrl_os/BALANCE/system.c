@@ -36,6 +36,9 @@ u8 Car_Mode=0;
 //Servo control PWM value, Ackerman car special
 //�������PWMֵ��������С��ר��
 int Servo;  
+float Steering_Angle;
+u8 Steering_Manual_Flag;
+u16 Moveit_Active_Counter;
 
 //Default speed of remote control car, unit: mm/s
 //ң��С����Ĭ���ٶȣ���λ��mm/s
@@ -50,14 +53,14 @@ float Move_X, Move_Y, Move_Z;
 float Velocity_KP=300,Velocity_KI=300; 
 
 //Smooth control of intermediate variables, dedicated to omni-directional moving cars
-//ƽ�������м������ȫ���ƶ�С��ר��?
+//ƽ�������м������ȫ���ƶ�С��ר��?
 Smooth_Control smooth_control;  
 
 //The parameter structure of the motor
-//����Ĳ����ṹ��?
+//����Ĳ����ṹ��?
 Motor_parameter MOTOR_A,MOTOR_B,MOTOR_C,MOTOR_D;  
 
-/************ С���ͺ���ر���? **************************/
+/************ С���ͺ���ر���? **************************/
 /************ Variables related to car model ************/
 //Encoder accuracy
 //����������
@@ -74,7 +77,7 @@ float Axle_spacing;
 //All-directional wheel turning radius, unit: m
 //ȫ����ת��뾶����λ��m
 float Omni_turn_radiaus; 
-/************ С���ͺ���ر���? **************************/
+/************ С���ͺ���ر���? **************************/
 /************ Variables related to car model ************/
 
 //PS2 controller, Bluetooth APP, aircraft model controller, CAN communication, serial port 1, serial port 5 communication control flag bit.
@@ -82,13 +85,17 @@ float Omni_turn_radiaus;
 //PS2�ֱ�������APP����ģ�ֱ���CANͨ�š�����1������5ͨ�ſ��Ʊ�־λ����6����־λĬ�϶�Ϊ0����������3����ģʽ
 u8 PS2_ON_Flag=0, APP_ON_Flag=0, Remote_ON_Flag=0, CAN_ON_Flag=0, Usart1_ON_Flag, Usart5_ON_Flag; 
 
-//�����ɶȻ�е�۵�Ŀ��Ƕ�?
+//�����ɶȻ�е�۵�Ŀ��Ƕ�?
 float Moveit_Angle1=0,Moveit_Angle2=0,Moveit_Angle3=0,Moveit_Angle4=0,Moveit_Angle5=0,Moveit_Angle6=0;
+// Target angles for smooth transition ƽ��ת����Ŀ��Ƕ�
+float Moveit_Target_Angle1=0,Moveit_Target_Angle2=0,Moveit_Target_Angle3=0,Moveit_Target_Angle4=0,Moveit_Target_Angle5=0,Moveit_Target_Angle6=0;
+// Maximum angle change per control cycle (rad/cycle) ÿ�����������������Ƕ䱻� (����/����)
+float Moveit_Max_Speed=0.05f; // Ĭ��ֵ: 0.05rad/cycle, ���Լ���Ҫ����
 //�����ɶȻ�е�۵�Ŀ��PWMֵ
 int  Moveit_PWM1,Moveit_PWM2,Moveit_PWM3,Moveit_PWM4,Moveit_PWM5,Moveit_PWM6;
 
 //Bluetooth remote control associated flag bits
-//����ң����صı�־�?
+//����ң����صı�־�?
 u8 Flag_Left, Flag_Right, Flag_Direction=0, Turn_Flag; 
 
 //Sends the parameter's flag bit to the Bluetooth APP
@@ -96,18 +103,18 @@ u8 Flag_Left, Flag_Right, Flag_Direction=0, Turn_Flag;
 u8 PID_Send; 
 
 //The PS2 gamepad controls related variables
-//PS2�ֱ�������ر���?
+//PS2�ֱ�������ر���?
 int PS2_LX,PS2_LY,PS2_RX,PS2_RY,PS2_KEY; 
 
 //Self-check the relevant flag variables
-//�Լ���ر�־����?
+//�Լ���ر�־����?
 int Check=0, Checking=0, Checked=0, CheckCount=0, CheckPhrase1=0, CheckPhrase2=0; 
 
 //Check the result code
 //�Լ�������
 long int ErrorCode=0; 
 
-//ϵͳ��ر���?
+//ϵͳ��ر���?
 SYS_VAL_t SysVal;
 
 
@@ -118,10 +125,10 @@ USB_OTG_CORE_HANDLE  USB_OTG_Core_dev;
 //����or�Լ�����־λ
 u8 Proc_Flag=0; 
 
-//��������?
+//��������?
 int servo_flag = 0;
 
-//��е�۸����������?
+//��е�۸����������?
 int Servo_Count[6] = {1500, 1500, 1500, 1500, 1500, 1000};
 
 //����Լ���ؼ���
@@ -133,7 +140,7 @@ int POT_val;
 //�Լ�ģʽ�»�е��ת������
 int Arm_direction = 0;
 
-//��ʱ��8���ʹ�ܱ��?
+//��ʱ��8���ʹ�ܱ��?
 int TIM8_Servo_flag = 0;
 
 u8 uart3_receive_message[50];
@@ -161,7 +168,9 @@ void systemInit(void)
 	//IIC initialization for IMU
     //IIC��ʼ��������IMU
     I2C_GPIOInit();
-	//ϵͳ�������������ʼ��?
+    PCA_I2C_GPIOInit();
+    PCA9685_Init();
+	//ϵͳ�������������ʼ��?
 	SYS_VAL_t_Init(&SysVal);
 	
 	//���IMUΪMPU6050,���Ǿɰ�C30D
@@ -183,8 +192,8 @@ void systemInit(void)
 		MPU6050_initialize();
 	}
 	//���IMU�ͺ�ΪICM20948,�����°�C30D
-	else if( REG_VAL_WIA == ICM20948_getDeviceID() )//��ȡICM20948 id
-	{
+  else if( REG_VAL_WIA == ICM20948_getDeviceID() )//��ȡICM20948 id
+  {
 		SysVal.HardWare_Ver = V1_1;
 		//USB PS2��ʼ��
 		USBH_Init(&USB_OTG_Core_dev,USB_OTG_FS_CORE_ID,&USB_Host,&HID_cb,&USR_Callbacks);
@@ -194,9 +203,9 @@ void systemInit(void)
 		//MPU6050 is initialized to read the vehicle's three-axis attitude,
 		//three-axis angular velocity and three-axis acceleration information
 		//ICM20948��ʼ�������ڶ�ȡС��������ٶȡ�������ٶ���Ϣ
-		invMSInit();
-	}
-	else //�޷�ʶ���������?,��λϵͳ
+    invMSInit();
+  }
+  else //�޷�ʶ���������?,��λϵͳ
 	{
 		NVIC_SystemReset();
 	}         
@@ -204,7 +213,7 @@ void systemInit(void)
          		           
 	    
   //Initialize the hardware interface connected to the buzzer	
-  //��ʼ������������ӵ�Ӳ���ӿ�?
+  //��ʼ������������ӵ�Ӳ���ӿ�?
 	Buzzer_Init();  
 	
 	//Initialize the hardware interface connected to the enable switch
@@ -238,11 +247,11 @@ void systemInit(void)
 	//Serial port 5 initialization, communication baud rate 115200, 
 	//can be used to communicate with ROS terminal
 	//����5��ʼ����ͨ�Ų�����115200����������ROS��ͨ��
-	uart5_init(115200);
+  uart5_init(115200);
 
 	//ADC pin initialization, used to read the battery voltage and potentiometer gear, 
 	//potentiometer gear determines the car after the boot of the car model
-	//ADC���ų�ʼ�������ڶ�ȡ��ص�ѹ���λ����λ����λ����λ����С���������С�������ͺ�?
+	//ADC���ų�ʼ�������ڶ�ȡ��ص�ѹ���λ����λ����λ����λ����С���������С�������ͺ�?
  	Adc_Init();  
 	Adc_POWER_Init();
 	
@@ -261,22 +270,35 @@ void systemInit(void)
 	
 	 //Encoder A is initialized to read the real time speed of motor C  
   //������A��ʼ�������ڶ�ȡ���C��ʵʱ�ٶ�	
-	 Encoder_Init_TIM2();
+	Encoder_Init_TIM2();
 	//Encoder B is initialized to read the real time speed of motor D
   //������B��ʼ�������ڶ�ȡ���D��ʵʱ�ٶ�	
-	  Encoder_Init_TIM3();   
+	Encoder_Init_TIM3();   
 	//Encoder C is initialized to read the real time speed of motor B
   //������C��ʼ�������ڶ�ȡ���B��ʵʱ�ٶ�	
-	  Encoder_Init_TIM4(); 
+	Encoder_Init_TIM4(); 
 	//Encoder D is initialized to read the real time speed of motor A
 	//������D��ʼ�������ڶ�ȡ���A��ʵʱ�ٶ�
-		Encoder_Init_TIM5(); 
+	Encoder_Init_TIM5(); 
 	
-	  Flash_Read();//��ȡflash����Ķ���ϵ�΢��λ��
+	Flash_Read();//��ȡflash����Ķ���ϵ�΢��λ��
 	
-      TIM8_SERVO_Init(9999,168-1);//APB2��ʱ��Ƶ��Ϊ168M , Ƶ��=168M/((9999+1)*(167+1))=100Hz
+    TIM8_SERVO_Init(9999,168-1);//APB2��ʱ��Ƶ��Ϊ168M , Ƶ��=168M/((9999+1)*(167+1))=100Hz
     TIM12_SERVO_Init(9999,84-1);  //APB1��ʱ��Ƶ��Ϊ84M , Ƶ��=84M/((9999+1)*(83+1))=100Hz
-    ArmServo_Init();
+  ArmServo_Init();
+  TIM8->CCR1 = SERVO_INIT;
+  {
+      uint16_t duty = (uint16_t)((SERVO_INIT * 4096) / 20000);
+      PCA9685_SetPWM(0, 0, duty);
+      PCA9685_SetPWM(1, 0, duty);
+      PCA9685_SetPWM(2, 0, duty);
+      PCA9685_SetPWM(3, 0, duty);
+      PCA9685_SetPWM(4, 0, duty);
+      PCA9685_SetPWM(5, 0, duty);
+  }
+  Steering_Angle=0;
+  Steering_Manual_Flag=0;
+  Moveit_Active_Counter=0;
 
   //Initialize motor speed control and, for controlling motor speed, PWM frequency 10kHz
   //��ʼ������ٶȿ����Լ������ڿ��Ƶ���ٶȣ�PWMƵ��10KHZ

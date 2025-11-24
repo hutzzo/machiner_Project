@@ -1,5 +1,7 @@
 #include "balance.h"
 #include "arm_servo.h"
+#include "pca9685.h"
+static void Set_Steering_Servo(int pwm);
 
 u32 Buzzer_count1 = 0;
 
@@ -71,6 +73,18 @@ void Drive_Motor(float Vx,float Vy,float Vz)
 			MOTOR_C.Target=target_limit_float( MOTOR_C.Target,-amplitude,amplitude); 
 			MOTOR_D.Target=target_limit_float( MOTOR_D.Target,-amplitude,amplitude); 	
 		}
+        else if (Car_Mode==Akm_Car)
+        {
+            float delta = Steering_Manual_Flag ? Steering_Angle : 0.0f;
+            float omega = tanf(delta) * Vx / Axle_spacing;
+            float half_track = Wheel_spacing * 0.5f;
+            MOTOR_A.Target  = Vx - omega * half_track;
+            MOTOR_B.Target  = Vx + omega * half_track;
+            MOTOR_C.Target  = 0;
+            MOTOR_D.Target  = 0;
+            MOTOR_A.Target=target_limit_float( MOTOR_A.Target,-amplitude,amplitude);
+            MOTOR_B.Target=target_limit_float( MOTOR_B.Target,-amplitude,amplitude);
+        }
 		
 		//Tank Car
 		//�Ĵ���
@@ -160,12 +174,13 @@ void Balance_task(void *pvParameters)
 					 
 						 
 					 
-					 //Set different PWM control polarity according to different car models
+                     //Set different PWM control polarity according to different car models
 					 //���ݲ�ͬС���ͺ����ò�ͬ��PWM���Ƽ���
 					 switch(Car_Mode)
 					 {
 							case Mec_Car:       Set_Pwm(MOTOR_A.Motor_Pwm, -MOTOR_B.Motor_Pwm,  -MOTOR_C.Motor_Pwm, MOTOR_D.Motor_Pwm,Position1,Position2,Position3,Position4,Position5,Position6); break; //Mecanum wheel car       //�����ķ��С��
 							case FourWheel_Car: Set_Pwm(MOTOR_A.Motor_Pwm, -MOTOR_B.Motor_Pwm,  -MOTOR_C.Motor_Pwm, MOTOR_D.Motor_Pwm,Position1,Position2,Position3,Position4,Position5,Position6); break; //FourWheel car           //������ 
+                            case Akm_Car:       Set_Steering_Servo(SERVO_PWM_VALUE(Steering_Manual_Flag?Steering_Angle:Vz_to_Akm_Angle(Move_X, Move_Z))); Set_Pwm(MOTOR_A.Motor_Pwm, -MOTOR_B.Motor_Pwm,  0, 0, Position1,Position2,Position3,Position4,Position5,Position6); break;
 							case Tank_Car:      Set_Pwm(MOTOR_A.Motor_Pwm,  MOTOR_B.Motor_Pwm,   MOTOR_C.Motor_Pwm, MOTOR_D.Motor_Pwm,Position1,Position2,Position3,Position4,Position5,Position6); break; //Tank Car                //�Ĵ���
 					 }
 				 }
@@ -192,6 +207,7 @@ void Balance_task(void *pvParameters)
 					 {
 							case Mec_Car:       Set_Pwm( Full_rotation, -Full_rotation, -Full_rotation, Full_rotation, 0, 0, 0, 0, 0, 0); break; //Mecanum wheel car       //�����ķ��С��
 							case FourWheel_Car: Set_Pwm( Full_rotation, -Full_rotation, -Full_rotation, Full_rotation, 0, 0, 0, 0, 0, 0); break; //FourWheel car           //������ 
+                            case Akm_Car:       Set_Pwm( Full_rotation, -Full_rotation, 0, 0, 0, 0, 0, 0, 0, 0); break;
 							case Tank_Car:      Set_Pwm( Full_rotation,  Full_rotation,  Full_rotation, Full_rotation, 0, 0, 0, 0, 0, 0); break; //Tank Car                //�Ĵ���
 					 } 
 					 if(!(check_time_count_motor_retreat>0) && !(check_time_count_motor_forward>0))
@@ -263,12 +279,23 @@ Output  : none
 **************************************************************************/
 void Set_Mechanical_Arm(int Servo1,int Servo2,int Servo3,int Servo4,int Servo5,int Servo6)
 {
-	TIM8->CCR1=Servo1;
-	TIM8->CCR2=Servo2;
-	TIM8->CCR3=Servo3;
-	TIM8->CCR4=Servo4;
-	TIM12->CCR1=Servo5;
-	TIM12->CCR2=Servo6;
+    uint16_t c1=(uint16_t)((Servo1*4096)/20000);
+    uint16_t c2=(uint16_t)((Servo2*4096)/20000);
+    uint16_t c3=(uint16_t)((Servo3*4096)/20000);
+    uint16_t c4=(uint16_t)((Servo4*4096)/20000);
+    uint16_t c5=(uint16_t)((Servo5*4096)/20000);
+    uint16_t c6=(uint16_t)((Servo6*4096)/20000);
+    PCA9685_SetPWM(0,0,c1);
+    PCA9685_SetPWM(1,0,c2);
+    PCA9685_SetPWM(2,0,c3);
+    PCA9685_SetPWM(3,0,c4);
+    PCA9685_SetPWM(4,0,c5);
+    PCA9685_SetPWM(5,0,c6);
+}
+
+static void Set_Steering_Servo(int pwm)
+{
+    TIM8->CCR1 = pwm;
 }
 
 /**************************************************************************
@@ -370,10 +397,9 @@ Output  : none
 **************************************************************************/
 void Set_Pwm(int motor_a,int motor_b,int motor_c,int motor_d,int servo1,int servo2,int servo3,int servo4,int servo5,int servo6)
 {
-	//Forward and reverse control of motor
-	//�������ת����
-	if(motor_a<0)			PWMA1=16799,PWMA2=16799+motor_a;
-	else 	            PWMA2=16799,PWMA1=16799-motor_a;
+	//Forward and reverse control of motor A (reversed)
+	if(motor_a<0)			PWMA2=16799,PWMA1=16799+motor_a;
+	else 	            PWMA1=16799,PWMA2=16799-motor_a;
 	
 	//Forward and reverse control of motor
 	//�������ת����	
@@ -406,14 +432,27 @@ void Set_Pwm(int motor_a,int motor_b,int motor_c,int motor_d,int servo1,int serv
 //	Position3+=Velocity3;
 //	Position4+=Velocity4;
 //	Position5+=Velocity5;	
-//	Position6+=Velocity6;		
-	
-	Servo_PWM1 =servo1;
-	Servo_PWM2 =servo2;
-	Servo_PWM3 =servo3;
-	Servo_PWM4 =servo4;
-	Servo_PWM5 =servo5;
-	Servo_PWM6 =servo6;
+	//	Position6+=Velocity6;		
+
+		if(Car_Mode!=Akm_Car)
+		{
+			Servo_PWM1 =servo1;
+			Servo_PWM2 =servo2;
+			Servo_PWM3 =servo3;
+			Servo_PWM4 =servo4;
+			Servo_PWM5 =servo5;
+			Servo_PWM6 =servo6;
+		}
+
+		if(Moveit_Active_Counter>0)
+		{
+			Set_Mechanical_Arm(servo1,servo2,servo3,servo4,servo5,servo6);
+			Moveit_Active_Counter--;
+		}
+		else
+		{
+			Set_Mechanical_Arm(SERVO_INIT,SERVO_INIT,SERVO_INIT,SERVO_INIT,SERVO_INIT,SERVO_INIT);
+		}
 }
 
 /**************************************************************************
@@ -676,7 +715,7 @@ void Get_RC(void)
 	 else if(Flag_Right==1)  Move_Z=-PI/2; //right rotation //����ת	
 	}
 	
- if(Car_Mode==Tank_Car||Car_Mode==FourWheel_Car)
+ if(Car_Mode==Tank_Car||Car_Mode==FourWheel_Car||Car_Mode==Akm_Car)
 	{
 	  if(Move_X<0) Move_Z=-Move_Z; //The differential control principle series requires this treatment //���ٿ���ԭ��ϵ����Ҫ�˴���
 		Move_Z=Move_Z*RC_Velocity/500;
@@ -732,7 +771,7 @@ void PS2_control(void)
 			Move_Z=Move_Z*RC_Velocity/500;
 		}	
 
-		else if(Car_Mode==Tank_Car||Car_Mode==FourWheel_Car)
+        else if(Car_Mode==Tank_Car||Car_Mode==FourWheel_Car||Car_Mode==Akm_Car)
 		{
 			if(Move_X<0) Move_Z=-Move_Z; //The differential control principle series requires this treatment //���ٿ���ԭ��ϵ����Ҫ�˴���
 			Move_Z=Move_Z*RC_Velocity/500;
@@ -750,20 +789,22 @@ void PS2_control(void)
 		
 		if(Servo_init_angle_adjust == 0)//��������
 		{
+			// PS2 control now modifies target angles for smooth transition
+			// PS2���Ƶ��ڽ��޸�Ŀ��Ƕȣ�ʵ��ƽ��ת��
 			switch(PS2_KEY)   //�������
 			 { 
-				case 9:       Moveit_Angle1=Moveit_Angle1+step1;  break; 
-        case 11:      Moveit_Angle1=Moveit_Angle1-step1;  break;				 
-				case 7:       Moveit_Angle2=Moveit_Angle2+step1;  break; 
-        case 5:       Moveit_Angle2=Moveit_Angle2-step1;  break;				 
-				case 8:       Moveit_Angle3=Moveit_Angle3+step1;  break;
-				case 6:       Moveit_Angle3=Moveit_Angle3-step1;  break;  
-				case 15:      Moveit_Angle4=Moveit_Angle4+step1;  break;       
-				case 13:      Moveit_Angle4=Moveit_Angle4-step1;  break;   
-				case 16:      Moveit_Angle5=Moveit_Angle5-step1;  break;   
-				case 14:      Moveit_Angle5=Moveit_Angle5+step1;  break; 
-				case 12:      Moveit_Angle6=Moveit_Angle6-step1;  break;   
-				case 10:      Moveit_Angle6=Moveit_Angle6+step1;  break;
+				case 9:       Moveit_Target_Angle1=Moveit_Target_Angle1+step1;  break; 
+        case 11:      Moveit_Target_Angle1=Moveit_Target_Angle1-step1;  break;				 
+				case 7:       Moveit_Target_Angle2=Moveit_Target_Angle2+step1;  break; 
+        case 5:       Moveit_Target_Angle2=Moveit_Target_Angle2-step1;  break;				 
+				case 8:       Moveit_Target_Angle3=Moveit_Target_Angle3+step1;  break;
+				case 6:       Moveit_Target_Angle3=Moveit_Target_Angle3-step1;  break;  
+				case 15:      Moveit_Target_Angle4=Moveit_Target_Angle4+step1;  break;       
+				case 13:      Moveit_Target_Angle4=Moveit_Target_Angle4-step1;  break;   
+				case 16:      Moveit_Target_Angle5=Moveit_Target_Angle5-step1;  break;   
+				case 14:      Moveit_Target_Angle5=Moveit_Target_Angle5+step1;  break; 
+				case 12:      Moveit_Target_Angle6=Moveit_Target_Angle6-step1;  break;   
+				case 10:      Moveit_Target_Angle6=Moveit_Target_Angle6+step1;  break;
 				default:        break;
 			 }
 
@@ -833,7 +874,7 @@ void Remote_Control(void)
 		{
 			Move_Z=Move_Z*Remote_RCvelocity/500;
 		}	
-		else if(Car_Mode==Tank_Car||Car_Mode==FourWheel_Car)
+        else if(Car_Mode==Tank_Car||Car_Mode==FourWheel_Car||Car_Mode==Akm_Car)
 		{
 			if(Move_X<0) Move_Z=-Move_Z; //The differential control principle series requires this treatment //���ٿ���ԭ��ϵ����Ҫ�˴���
 			Move_Z=Move_Z*Remote_RCvelocity/500;
@@ -929,9 +970,10 @@ void Get_Velocity_Form_Encoder(void)
 		//���ݲ�ͬС���ͺž�����������ֵ����
 		switch(Car_Mode)
 		{
-			case Mec_Car:       Encoder_A_pr=OriginalEncoder.A; Encoder_B_pr= OriginalEncoder.B; Encoder_C_pr= -OriginalEncoder.C;  Encoder_D_pr=-OriginalEncoder.D; break; 
-			case FourWheel_Car: Encoder_A_pr=OriginalEncoder.A; Encoder_B_pr= OriginalEncoder.B; Encoder_C_pr= -OriginalEncoder.C;  Encoder_D_pr=-OriginalEncoder.D; break; 
-			case Tank_Car:      Encoder_A_pr=OriginalEncoder.A; Encoder_B_pr=-OriginalEncoder.B; Encoder_C_pr=  OriginalEncoder.C;  Encoder_D_pr= OriginalEncoder.D; break; 
+			case Mec_Car:       Encoder_A_pr=OriginalEncoder.A;  Encoder_B_pr= OriginalEncoder.B;  Encoder_C_pr= -OriginalEncoder.C;  Encoder_D_pr=-OriginalEncoder.D; break; 
+			case FourWheel_Car: Encoder_A_pr=OriginalEncoder.A;  Encoder_B_pr= OriginalEncoder.B;  Encoder_C_pr= -OriginalEncoder.C;  Encoder_D_pr=-OriginalEncoder.D; break; 
+			case Akm_Car:       Encoder_A_pr=-OriginalEncoder.A; Encoder_B_pr= OriginalEncoder.B;  Encoder_C_pr= -OriginalEncoder.C;  Encoder_D_pr=-OriginalEncoder.D; break; 
+			case Tank_Car:      Encoder_A_pr=OriginalEncoder.A;  Encoder_B_pr=-OriginalEncoder.B; Encoder_C_pr=  OriginalEncoder.C;  Encoder_D_pr= OriginalEncoder.D;  break; 
 		}
 		
 		//The encoder converts the raw data to wheel speed in m/s
@@ -1043,12 +1085,77 @@ void moveit_pwm_limit(void)
 	Moveit_PWM6=target_limit_int(Moveit_PWM6,900,2100);  
 }
 /**************************************************************************
+�������ܣ�ƽ������Ƕȹ��ɣ����ֹ�ؽڶ�������
+��ڲ�������
+����  ֵ����
+**************************************************************************/
+void smooth_angle_transition(void)
+{
+	float delta;
+	
+	// Joint 1 smooth transition �ؽ�1ƽ��ת��
+	delta = Moveit_Target_Angle1 - Moveit_Angle1;
+	if(delta > Moveit_Max_Speed) 
+		Moveit_Angle1 += Moveit_Max_Speed;
+	else if(delta < -Moveit_Max_Speed) 
+		Moveit_Angle1 -= Moveit_Max_Speed;
+	else 
+		Moveit_Angle1 = Moveit_Target_Angle1;
+	
+	// Joint 2 smooth transition �ؽ�2ƽ��ת��
+	delta = Moveit_Target_Angle2 - Moveit_Angle2;
+	if(delta > Moveit_Max_Speed) 
+		Moveit_Angle2 += Moveit_Max_Speed;
+	else if(delta < -Moveit_Max_Speed) 
+		Moveit_Angle2 -= Moveit_Max_Speed;
+	else 
+		Moveit_Angle2 = Moveit_Target_Angle2;
+	
+	// Joint 3 smooth transition �ؽ�3ƽ��ת��
+	delta = Moveit_Target_Angle3 - Moveit_Angle3;
+	if(delta > Moveit_Max_Speed) 
+		Moveit_Angle3 += Moveit_Max_Speed;
+	else if(delta < -Moveit_Max_Speed) 
+		Moveit_Angle3 -= Moveit_Max_Speed;
+	else 
+		Moveit_Angle3 = Moveit_Target_Angle3;
+	
+	// Joint 4 smooth transition �ؽ�4ƽ��ת��
+	delta = Moveit_Target_Angle4 - Moveit_Angle4;
+	if(delta > Moveit_Max_Speed) 
+		Moveit_Angle4 += Moveit_Max_Speed;
+	else if(delta < -Moveit_Max_Speed) 
+		Moveit_Angle4 -= Moveit_Max_Speed;
+	else 
+		Moveit_Angle4 = Moveit_Target_Angle4;
+	
+	// Joint 5 smooth transition �ؽ�5ƽ��ת��
+	delta = Moveit_Target_Angle5 - Moveit_Angle5;
+	if(delta > Moveit_Max_Speed) 
+		Moveit_Angle5 += Moveit_Max_Speed;
+	else if(delta < -Moveit_Max_Speed) 
+		Moveit_Angle5 -= Moveit_Max_Speed;
+	else 
+		Moveit_Angle5 = Moveit_Target_Angle5;
+	
+	// Joint 6 smooth transition �ؽ�6ƽ��ת��
+	delta = Moveit_Target_Angle6 - Moveit_Angle6;
+	if(delta > Moveit_Max_Speed) 
+		Moveit_Angle6 += Moveit_Max_Speed;
+	else if(delta < -Moveit_Max_Speed) 
+		Moveit_Angle6 -= Moveit_Max_Speed;
+	else 
+		Moveit_Angle6 = Moveit_Target_Angle6;
+}
+
+/**************************************************************************
 �������ܣ���е�۹ؽ��������ִ��룬ʹ��PIDλ�ÿ�������
 ��ڲ�������
 ����  ֵ����
 **************************************************************************/
 void Drive_Robot_Arm(void)
 {
+		  smooth_angle_transition(); //ƽ������Ƕȹ���
 		  moveit_angle_limit();		 //�ؽڽǶ����޷�
 			Moveit_PWM1=  SERVO_PWM_VALUE(Moveit_Angle1)+Moveit_Angle1_init; //����Ŀ�껡�ȣ�������Ŀ��PWMֵ
 			Moveit_PWM2 = SERVO_PWM_VALUE(Moveit_Angle2)+Moveit_Angle2_init;

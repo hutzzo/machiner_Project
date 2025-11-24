@@ -478,6 +478,16 @@
               <FileType>1</FileType>
               <FilePath>..\HARDWARE\arm_servo.c</FilePath>
             </File>
+            <File>
+              <FileName>I2C_PCA.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\HARDWARE\I2C_PCA.c</FilePath>
+            </File>
+            <File>
+              <FileName>pca9685.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\HARDWARE\pca9685.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

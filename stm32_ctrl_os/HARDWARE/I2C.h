@@ -8,13 +8,13 @@
 #include "stdio.h"
 #include "string.h"
 
-#define SDA_IN()  {GPIOB->MODER&=~(3<<(11*2));GPIOB->MODER|=0<<11*2;}	//PB5ÊäÈëÄ£Ê½
-#define SDA_OUT() {GPIOB->MODER&=~(3<<(11*2));GPIOB->MODER|=1<<11*2;} //PB5Êä³öÄ£Ê½
+#define SDA_IN()  {GPIOB->MODER&=~(3<<(11*2));GPIOB->MODER|=0<<11*2;}
+#define SDA_OUT() {GPIOB->MODER&=~(3<<(11*2));GPIOB->MODER|=1<<11*2;}
 
-//IO²Ù×÷º¯Êý	 
-#define IIC_SCL    PBout(10) //SCL
-#define IIC_SDA    PBout(11) //SDA	 
-#define READ_SDA   PBin(11)  //ÊäÈëSDA 
+//IOï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½	 
+#define IIC_SCL    PBout(10)
+#define IIC_SDA    PBout(11)	 
+#define READ_SDA   PBin(11)
 
 
 #ifndef I2C_Direction_Transmitter
