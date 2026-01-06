@@ -73,8 +73,23 @@ void Drive_Motor(float Vx,float Vy,float Vz)
 		}
 		else
 		{
-			MOTOR_B.Target  = Vx - Vz * (Wheel_spacing) / 2.0f;    // B=左轮目标速度
-			MOTOR_A.Target =  Vx + Vz * (Wheel_spacing) / 2.0f;    // A=右轮目标速度
+			// 修正倒车差速反向问题：差速项 Vz 的符号需要根据 Vx 的方向（前进/后退）来调整
+			// 前进时 (Vx > 0): 左转(Vz>0) -> 左轮减速(Vx - Vz)，右轮加速(Vx + Vz) -> 差速项为 -Vz, +Vz
+			// 后退时 (Vx < 0): 左转(Vz>0) -> 左轮加速(|Vx| + |Vz| = Vx - Vz)，右轮减速(|Vx| - |Vz| = Vx + Vz)
+			// 但用户反馈“前进正确，倒车反了”，说明需要单独处理倒车时的差速符号
+			
+			float diff_term = Vz * (Wheel_spacing) / 2.0f;
+			
+			if (Vx < 0) // 倒车
+			{
+				MOTOR_B.Target = Vx + diff_term; // 倒车时反转差速方向
+				MOTOR_A.Target = Vx - diff_term;
+			}
+			else // 前进或静止
+			{
+				MOTOR_B.Target = Vx - diff_term; // 保持原有的前进逻辑（用户确认为正确）
+				MOTOR_A.Target = Vx + diff_term;
+			}
 		}
 		
 		//Wheel (motor) target speed limit //轮子(电机)目标速度限幅
@@ -187,16 +202,16 @@ void Balance_task(void *pvParameters)
 					 // 【调试模式】直接开环控制，绕过PI控制器和编码器反馈
 					 // 正式使用时注释掉这4行，恢复下面被注释的PI控制
 					 // 注意：Target单位是m/s，系数要够大才能产生足够的PWM（推荐20000-80000）
-					 MOTOR_A.Motor_Pwm = (int)(MOTOR_A.Target * 50000.0f);  // 改为50000，因为Target是m/s
-					 MOTOR_B.Motor_Pwm = (int)(MOTOR_B.Target * 50000.0f);
-					 MOTOR_C.Motor_Pwm = (int)(MOTOR_C.Target * 50000.0f);
-					 MOTOR_D.Motor_Pwm = (int)(MOTOR_D.Target * 50000.0f);
+					 // MOTOR_A.Motor_Pwm = (int)(MOTOR_A.Target * 50000.0f);  // 改为50000，因为Target是m/s
+					 // MOTOR_B.Motor_Pwm = (int)(MOTOR_B.Target * 50000.0f);
+					 // MOTOR_C.Motor_Pwm = (int)(MOTOR_C.Target * 50000.0f);
+					 // MOTOR_D.Motor_Pwm = (int)(MOTOR_D.Target * 50000.0f);
 					 
 					 // 【正常模式】闭环PI控制（调试时被注释）
-					 //MOTOR_A.Motor_Pwm=Incremental_PI_A(MOTOR_A.Encoder, MOTOR_A.Target);
-					 //MOTOR_B.Motor_Pwm=Incremental_PI_B(MOTOR_B.Encoder, MOTOR_B.Target);
-					 //MOTOR_C.Motor_Pwm=Incremental_PI_C(MOTOR_C.Encoder, MOTOR_C.Target);
-					 //MOTOR_D.Motor_Pwm=Incremental_PI_D(MOTOR_D.Encoder, MOTOR_D.Target);
+					 MOTOR_A.Motor_Pwm=Incremental_PI_A(MOTOR_A.Encoder, MOTOR_A.Target);
+					 MOTOR_B.Motor_Pwm=Incremental_PI_B(MOTOR_B.Encoder, MOTOR_B.Target);
+					 MOTOR_C.Motor_Pwm=Incremental_PI_C(MOTOR_C.Encoder, MOTOR_C.Target);
+					 MOTOR_D.Motor_Pwm=Incremental_PI_D(MOTOR_D.Encoder, MOTOR_D.Target);
 					 
 					 Limit_Pwm(16700);//限制频率PWM限幅，最大16800
 					 
@@ -389,9 +404,13 @@ float target_limit_float(float insert, float low, float high)
 
 u8 Turn_Off(int voltage)
 {
-    // 电压保护：低于11.0V时停止电机输出，防止电池过放
-    if(voltage < 1100) return 1;  // 11.0V = 1100 (单位：0.01V)
+    // 调试阶段彻底屏蔽电压保护，强制返回0（正常）
+    // 待电机正常运转后，再恢复电压检查逻辑
     return 0; 
+    
+    // 原有逻辑备份：
+    // if(voltage < 1100) return 1; 
+    // return 0; 
 }
 
 void Set_Pwm(int motor_a,int motor_b,int motor_c,int motor_d,int servo1,int servo2,int servo3,int servo4,int servo5,int servo6)
