@@ -4,50 +4,50 @@
 Function: Key initialization
 Input   : none
 Output  : none
-º¯Êý¹¦ÄÜ£º°´¼ü³õÊ¼»¯
-Èë¿Ú²ÎÊý£ºÎÞ
-·µ»Ø  Öµ£ºÎÞ 
+åŠŸèƒ½æè¿°ï¼šæŒ‰é”®åˆå§‹åŒ–
+è¾“å…¥å‚æ•°ï¼šæ— 
+è¿” å›ž å€¼ï¼šæ—  
 **************************************************************************/
 void KEY_Init(void)
 {
 	GPIO_InitTypeDef  GPIO_InitStructure;
-  RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOE, ENABLE);//Ê¹ÄÜGPIOBÊ±ÖÓ
-  GPIO_InitStructure.GPIO_Pin = KEY_PIN; //KEY¶ÔÓ¦Òý½Å
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;//ÆÕÍ¨ÊäÈëÄ£Ê½
+  RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOE, ENABLE);//ä½¿èƒ½GPIOEæ—¶é’Ÿ
+  GPIO_InitStructure.GPIO_Pin = KEY_PIN; //KEYå¯¹åº”å¼•è„š
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;//æ™®é€šè¾“å…¥æ¨¡å¼
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;//100M
-  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;//ÉÏÀ­
-  GPIO_Init(GPIOE, &GPIO_InitStructure);//³õÊ¼»¯GPIOB14	
+  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;//ä¸Šæ‹‰
+  GPIO_Init(GPIOE, &GPIO_InitStructure);//åˆå§‹åŒ–GPIOE
 } 
 /**************************************************************************
 Function: Buttons to scan
 Input   : none
 Output  : none
-º¯Êý¹¦ÄÜ£º°´¼üÉ¨Ãè
-Èë¿Ú²ÎÊý£ºÎÞ
-·µ»Ø  Öµ£º°´¼ü×´Ì¬ 0£ºÎÞ¶¯×÷ 1£ºµ¥»÷ 
+åŠŸèƒ½æè¿°ï¼šæŒ‰é”®æ‰«æ
+è¾“å…¥å‚æ•°ï¼šæ— 
+è¿” å›ž å€¼ï¼šæŒ‰é”®çŠ¶æ€ 0ï¼šæ— åŠ¨ä½œ 1ï¼šæŒ‰ä¸‹ 
 **************************************************************************/
 u8 click(void)
 {
 	//Press the release sign
-	//°´¼ü°´ËÉ¿ª±êÖ¾
+	//æŒ‰é”®æ¾å¼€æ ‡å¿—
 	static u8 flag_key=1;
 	
 	if(flag_key&&KEY==0)
 	{
-	 flag_key=0; //The key is pressed //°´¼ü°´ÏÂ
+	 flag_key=0; //The key is pressed //æŒ‰é”®æŒ‰ä¸‹
 	 return 1;	
 	}
 	else if(1==KEY)			
 		flag_key=1;
-	return 0; //No key is pressed //ÎÞ°´¼ü°´ÏÂ
+	return 0; //No key is pressed //æ— æŒ‰é”®æŒ‰ä¸‹
 }
 /**************************************************************************
 Function: Delay function
 Input   : none
 Output  : none
-º¯Êý¹¦ÄÜ£ºÑÓ³Ùº¯Êý
-Èë¿Ú²ÎÊý£ºÎÞ
-·µ »Ø Öµ£ºÎÞ
+åŠŸèƒ½æè¿°ï¼šå»¶æ—¶å‡½æ•°
+è¾“å…¥å‚æ•°ï¼šæ— 
+è¿” å›ž å€¼ï¼šæ— 
 **************************************************************************/
 void Delay_ms(void)
 {
@@ -61,9 +61,9 @@ void Delay_ms(void)
 Function: Buttons to scan
 Input   : Double click wait time
 Output  : Button status: 0- no action, 1- click, 2- double click
-º¯Êý¹¦ÄÜ£º°´¼üÉ¨Ãè
-Èë¿Ú²ÎÊý£ºË«»÷µÈ´ýÊ±¼ä
-·µ»Ø  Öµ£º°´¼ü×´Ì¬: 0-ÎÞ¶¯×÷, 1-µ¥»÷, 2-Ë«»÷ 
+åŠŸèƒ½æè¿°ï¼šæŒ‰é”®æ‰«æ
+è¾“å…¥å‚æ•°ï¼šåŒå‡»ç­‰å¾…æ—¶é—´
+è¿” å›ž å€¼ï¼šæŒ‰é”®çŠ¶æ€: 0-æ— åŠ¨ä½œ, 1-å•å‡», 2-åŒå‡» 
 **************************************************************************/
 u8 click_N_Double (u8 time)
 {
@@ -85,7 +85,7 @@ u8 click_N_Double (u8 time)
 				{
 					double_key=0;
 					count_single=0;
-					return 2; //Double click //Ë«»÷
+					return 2; //Double click //åŒå‡»
 				}
 		}
 		if(1==KEY)			flag_key=0,count_key=0;
@@ -97,7 +97,7 @@ u8 click_N_Double (u8 time)
 			{
 			double_key=0;
 			count_single=0;	
-			return 1; //Click //µ¥»÷
+			return 1; //Click //å•å‡»
 			}
 			if(Forever_count>time)
 			{
@@ -111,9 +111,9 @@ u8 click_N_Double (u8 time)
 Function: Button scan.Because static variables are used, a function with a different name needs to be defined when the keystroke scan function is used multiple times
 Input   : none
 Output  : Button status: 0- no action, 1- click, 2- double click
-º¯Êý¹¦ÄÜ£º°´¼üÉ¨Ãè¡£ÒòÎªÊ¹ÓÃµ½ÁË¾²Ì¬±äÁ¿£¬µ±¶à´¦ÐèÒªÊ¹ÓÃ°´¼üÉ¨Ãèº¯ÊýÊ±£¬ÐèÒªÔÙ¶¨ÒåÒ»¸ö²»Í¬Ãûº¯Êý
-Èë¿Ú²ÎÊý£ºÎÞ
-·µ »Ø Öµ£º°´¼ü×´Ì¬: 0-ÎÞ¶¯×÷, 1-µ¥»÷, 2-Ë«»÷ 
+åŠŸèƒ½æè¿°ï¼šæŒ‰é”®æ‰«æã€‚å› ä¸ºä½¿ç”¨äº†é™æ€å˜é‡ï¼Œå¤šå¤„ä½¿ç”¨æŒ‰é”®æ‰«æå‡½æ•°æ—¶éœ€è¦å®šä¹‰ä¸åŒåç§°çš„å‡½æ•°
+è¾“å…¥å‚æ•°ï¼šæ— 
+è¿” å›ž å€¼ï¼šæŒ‰é”®çŠ¶æ€: 0-æ— åŠ¨ä½œ, 1-å•å‡», 2-åŒå‡» 
 **************************************************************************/
 u8 click_N_Double_MPU6050 (u8 time)
 {
@@ -134,7 +134,7 @@ u8 click_N_Double_MPU6050 (u8 time)
 				{
 					double_key=0;
 					count_single=0;
-					return 2; //Double click //Ë«»÷
+					return 2; //Double click //åŒå‡»
 				}
 		}
 		if(1==KEY)			flag_key=0,count_key=0;
@@ -146,7 +146,7 @@ u8 click_N_Double_MPU6050 (u8 time)
 			{
 			double_key=0;
 			count_single=0;	
-			return 1; //Click //µ¥»÷
+			return 1; //Click //å•å‡»
 			}
 			if(Forever_count>time)
 			{
@@ -160,9 +160,9 @@ u8 click_N_Double_MPU6050 (u8 time)
 Function: Long according to the test
 Input   : none
 Output  : Key state 0: no action 1: long press 3s
-º¯Êý¹¦ÄÜ£º³¤°´¼ì²â
-Èë¿Ú²ÎÊý£ºÎÞ
-·µ»Ø  Öµ£º°´¼ü×´Ì¬ 0£ºÎÞ¶¯×÷ 1£º³¤°´3s
+åŠŸèƒ½æè¿°ï¼šé•¿æŒ‰æ£€æµ‹
+è¾“å…¥å‚æ•°ï¼šæ— 
+è¿” å›ž å€¼ï¼šæŒ‰é”®çŠ¶æ€ 0ï¼šæ— åŠ¨ä½œ 1ï¼šé•¿æŒ‰3s
 **************************************************************************/
 u8 Long_Press(void)
 {
@@ -171,13 +171,13 @@ u8 Long_Press(void)
 	if(Long_Press==0&&KEY==0)  Long_Press_count++; 
 	else                       Long_Press_count=0;
 
-	if(Long_Press_count>15)	//3 seconds //3Ãë	
+	if(Long_Press_count>15)	//3 seconds //3ç§’	
 	{
 		Long_Press=1;	
 		Long_Press_count=0;
 		return 1;
 	}				
-	 if(Long_Press==1) //Long press position 1 //³¤°´±êÖ¾Î»ÖÃ1
+	 if(Long_Press==1) //Long press position 1 //é•¿æŒ‰æ ‡å¿—ç½®1
 	{
 			Long_Press=0;
 	}

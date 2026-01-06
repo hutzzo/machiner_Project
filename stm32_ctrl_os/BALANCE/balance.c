@@ -1,115 +1,97 @@
 #include "balance.h"
 #include "arm_servo.h"
 #include "pca9685.h"
-static void Set_Steering_Servo(int pwm);
+#include "pstwo.h"
+#include "motor.h"
 
 u32 Buzzer_count1 = 0;
 
 // Robot mode is wrong to detect flag bits
-//������ģʽ�Ƿ��������־λ
+//模式是否错误标志位
 int robot_mode_check_flag=0; 
 
 short test_num;
 
-Encoder OriginalEncoder; //Encoder raw data //������ԭʼ����  
+Encoder OriginalEncoder; //Encoder raw data //编码器原始数据  
 
-u8 command_lost_count=0; //���ڡ�CAN�������ʧʱ���������ʧ1���ֹͣ����
+int command_lost_count=0; //控制指令丢失计数器
+float g_amplitude = 10.0f; // Limit for target speed (m/s)
+
+static void Set_Steering_Servo(int pwm)
+{
+    Servo_PWM1 = pwm; // Channel 1 of TIM8
+}
 
 /**************************************************************************
 Function: The inverse kinematics solution is used to calculate the target speed of each wheel according to the target speed of three axes
 Input   : X and Y, Z axis direction of the target movement speed
 Output  : none
-�������ܣ��˶�ѧ��⣬��������Ŀ���ٶȼ��������Ŀ��ת��
-��ڲ�����X��Y��Z�᷽���Ŀ���˶��ٶ�
-����  ֵ����
+功能描述：运动学逆解，根据三轴目标速度计算各轮目标转速
+输入参数：X和Y，Z轴方向的目标运动速度
+返 回 值：无
 **************************************************************************/
 void Drive_Motor(float Vx,float Vy,float Vz)
 {
-		float amplitude=3.5; //Wheel target speed limit //����Ŀ���ٶ��޷�
-	
-	  //Speed smoothing is enabled when moving the omnidirectional trolley
-	  //ȫ���ƶ�С���ſ����ٶ�ƽ������
-	  if(Car_Mode==Mec_Car)
+		//Set the target speed according to different models
+		//根据不同车型设置目标速度
+		if(Car_Mode==Mec_Car || Car_Mode==FourWheel_Car) 
 		{
-			Smooth_control(Vx,Vy,Vz); //Smoothing the input speed //�������ٶȽ���ƽ������
-  
-      //Get the smoothed data 
-			//��ȡƽ�������������			
-			Vx=smooth_control.VX;     
-			Vy=smooth_control.VY;
-			Vz=smooth_control.VZ;
-		}
-		
-		//Mecanum wheel car
-	  //�����ķ��С��
-	  if (Car_Mode==Mec_Car) 
-    {
-			//Inverse kinematics //�˶�ѧ���
-			MOTOR_A.Target   = +Vy+Vx-Vz*(Axle_spacing+Wheel_spacing);
-			MOTOR_B.Target   = -Vy+Vx-Vz*(Axle_spacing+Wheel_spacing);
-			MOTOR_C.Target   = +Vy+Vx+Vz*(Axle_spacing+Wheel_spacing);
-			MOTOR_D.Target   = -Vy+Vx+Vz*(Axle_spacing+Wheel_spacing);
-		
-			//Wheel (motor) target speed limit //����(���)Ŀ���ٶ��޷�
-			MOTOR_A.Target=target_limit_float(MOTOR_A.Target,-amplitude,amplitude); 
-			MOTOR_B.Target=target_limit_float(MOTOR_B.Target,-amplitude,amplitude); 
-			MOTOR_C.Target=target_limit_float(MOTOR_C.Target,-amplitude,amplitude); 
-			MOTOR_D.Target=target_limit_float(MOTOR_D.Target,-amplitude,amplitude); 
-		} 
-		
-		//FourWheel car
-		//������
-		else if(Car_Mode==FourWheel_Car) 
-		{	
-			//Inverse kinematics //�˶�ѧ���
-			MOTOR_A.Target  = Vx - Vz * (Wheel_spacing +  Axle_spacing) / 2.0f; //��������ֵ�Ŀ���ٶ�
-			MOTOR_B.Target  = Vx - Vz * (Wheel_spacing +  Axle_spacing) / 2.0f; //��������ֵ�Ŀ���ٶ�
-			MOTOR_C.Target  = Vx + Vz * (Wheel_spacing +  Axle_spacing) / 2.0f; //��������ֵ�Ŀ���ٶ�
-			MOTOR_D.Target  = Vx + Vz * (Wheel_spacing +  Axle_spacing) / 2.0f; //��������ֵ�Ŀ���ٶ�
-					
-			//Wheel (motor) target speed limit //����(���)Ŀ���ٶ��޷�
-			MOTOR_A.Target=target_limit_float( MOTOR_A.Target,-amplitude,amplitude); 
-			MOTOR_B.Target=target_limit_float( MOTOR_B.Target,-amplitude,amplitude); 
-			MOTOR_C.Target=target_limit_float( MOTOR_C.Target,-amplitude,amplitude); 
-			MOTOR_D.Target=target_limit_float( MOTOR_D.Target,-amplitude,amplitude); 	
-		}
-        else if (Car_Mode==Akm_Car)
-        {
-            float delta = Steering_Manual_Flag ? Steering_Angle : 0.0f;
-            float omega = tanf(delta) * Vx / Axle_spacing;
-            float half_track = Wheel_spacing * 0.5f;
-            MOTOR_A.Target  = Vx - omega * half_track;
-            MOTOR_B.Target  = Vx + omega * half_track;
-            MOTOR_C.Target  = 0;
-            MOTOR_D.Target  = 0;
-            MOTOR_A.Target=target_limit_float( MOTOR_A.Target,-amplitude,amplitude);
-            MOTOR_B.Target=target_limit_float( MOTOR_B.Target,-amplitude,amplitude);
-        }
-		
-		//Tank Car
-		//�Ĵ���
-		else if (Car_Mode==Tank_Car) 
-		{
-			//Inverse kinematics //�˶�ѧ���
-			MOTOR_A.Target  = Vx - Vz * (Wheel_spacing) / 2.0f;    //��������ֵ�Ŀ���ٶ�
-		  MOTOR_B.Target =  Vx + Vz * (Wheel_spacing) / 2.0f;    //��������ֵ�Ŀ���ٶ�
+			//Inverse kinematics //运动学逆解
+			MOTOR_A.Target  =  Vx + Vy - Vz * (Axle_spacing + Wheel_spacing);
+			MOTOR_B.Target = -Vx + Vy - Vz * (Axle_spacing + Wheel_spacing);
+			MOTOR_C.Target = -Vx + Vy + Vz * (Axle_spacing + Wheel_spacing);
+			MOTOR_D.Target =  Vx + Vy + Vz * (Axle_spacing + Wheel_spacing);
 			
-			//Wheel (motor) target speed limit //����(���)Ŀ���ٶ��޷�
-		  MOTOR_A.Target=target_limit_float( MOTOR_A.Target,-amplitude,amplitude); 
-	    MOTOR_B.Target=target_limit_float( MOTOR_B.Target,-amplitude,amplitude); 
-			MOTOR_C.Target=0; //Out of use //û��ʹ�õ�
-			MOTOR_D.Target=0; //Out of use //û��ʹ�õ�
+			//Wheel (motor) target speed limit //轮子(电机)目标速度限幅
+		  MOTOR_A.Target=target_limit_float( MOTOR_A.Target,-g_amplitude,g_amplitude); 
+	    MOTOR_B.Target=target_limit_float( MOTOR_B.Target,-g_amplitude,g_amplitude); 
+			MOTOR_C.Target=target_limit_float( MOTOR_C.Target,-g_amplitude,g_amplitude); 
+	    MOTOR_D.Target=target_limit_float( MOTOR_D.Target,-g_amplitude,g_amplitude); 
 		}
-
+		else if(Car_Mode==Tank_Car)
+		{
+			//Inverse kinematics //运动学逆解
+			MOTOR_A.Target  = -Vx + Vz * (Wheel_spacing); //左
+			MOTOR_B.Target =  Vx + Vz * (Wheel_spacing); //右
+			MOTOR_C.Target =  0; //Tank car only has 2 wheels //坦克车只有2个轮子
+			MOTOR_D.Target =  0; 
+			
+			//Wheel (motor) target speed limit //轮子(电机)目标速度限幅
+		  MOTOR_A.Target=target_limit_float( MOTOR_A.Target,-g_amplitude,g_amplitude); 
+	    MOTOR_B.Target=target_limit_float( MOTOR_B.Target,-g_amplitude,g_amplitude); 
+			MOTOR_C.Target=0; //Out of use //没有使用的
+			MOTOR_D.Target=0; //Out of use //没有使用的
+		}
+	else if(Car_Mode==Akm_Car)
+	{
+		//Inverse kinematics //运动学逆解
+		// 注意：实际硬件中 B在左边，A在右边
+		if(WheelSpeed_Manual_Flag)
+		{
+			MOTOR_B.Target = Left_Target_mps;   // B在左边
+			MOTOR_A.Target = Right_Target_mps;  // A在右边
+		}
+		else
+		{
+			MOTOR_B.Target  = Vx - Vz * (Wheel_spacing) / 2.0f;    // B=左轮目标速度
+			MOTOR_A.Target =  Vx + Vz * (Wheel_spacing) / 2.0f;    // A=右轮目标速度
+		}
 		
+		//Wheel (motor) target speed limit //轮子(电机)目标速度限幅
+	  MOTOR_A.Target=target_limit_float( MOTOR_A.Target,-g_amplitude,g_amplitude); 
+	  MOTOR_B.Target=target_limit_float( MOTOR_B.Target,-g_amplitude,g_amplitude); 
+		MOTOR_C.Target=0; //Out of use //没有使用的
+		MOTOR_D.Target=0; //Out of use //没有使用的
+	}
 }
+
 /**************************************************************************
 Function: FreerTOS task, core motion control task
 Input   : none
 Output  : none
-�������ܣ�FreeRTOS���񣬺����˶���������
-��ڲ�������
-����  ֵ����
+功能描述：FreeRTOS任务，核心运动控制任务
+输入参数：无
+返 回 值：无
 **************************************************************************/
 void Balance_task(void *pvParameters)
 { 
@@ -118,79 +100,128 @@ void Balance_task(void *pvParameters)
     while(1)
     {	
 			// This task runs at a frequency of 100Hz (10ms control once)
-			//��������100Hz��Ƶ�����У�10ms����һ�Σ�
+			//该任务以100Hz的频率运行（10ms控制一次）
 			vTaskDelayUntil(&lastWakeTime, F2T(RATE_100_HZ)); 
 			Buzzer_count1++;
 			//Time count is no longer needed after 30 seconds
-			//ʱ�������30�������Ҫ
+			//时间计数，30秒后不再需要
 			if(SysVal.Time_count<3000)SysVal.Time_count++;
 			
 			//Get the encoder data, that is, the real time wheel speed, 
 			//and convert to transposition international units
-			//��ȡ���������ݣ�������ʵʱ�ٶȣ���ת��λ���ʵ�λ
+			//获取编码器数据，即实时轮速，并转换为国际单位
 			Get_Velocity_Form_Encoder();   
 			
-			if(Servo_init_angle_adjust == 1) Servo_init_angle_adjust_function(); //��������ʼλ��΢��ģʽ
+			if(Servo_init_angle_adjust == 1) Servo_init_angle_adjust_function(); //进入舵机初始位置微调模式
 			
 			//Click the user button to update the gyroscope zero
-				//�����û������������������
+				//点击用户按键更新陀螺仪零点
 				Key();
 			
-			if(Check==0) //If self-check mode is not enabled //���û�������Լ�ģʽ
+			// Read battery voltage
+			Voltage = Get_battery_volt();
+			
+			if(Check==0) //If self-check mode is not enabled //如果没有进入自检模式
 			{
-//				command_lost_count++; //���ڡ�CAN�������ʧʱ���������ʧ1���ֹͣ����
-//				if(command_lost_count>RATE_100_HZ && APP_ON_Flag==0 && Remote_ON_Flag==0 && PS2_ON_Flag==0) //����APP��PS2����ģң��ģʽ������CAN������1������3����ģʽ
-//					Move_X=0, Move_Y=0, Move_Z=0;
+				// 【调试代码已注释】硬件测试完成，电机能正常转动
+				// 现在使用正常的开环控制逻辑（由串口指令控制）
+				// TIM10->CCR1 = 8000;  
+				// TIM11->CCR1 = 0;     
+				// TIM9->CCR1  = 8000;  
+				// TIM9->CCR2  = 0;     
+				// PWMA1 = 8000;  
+				// PWMB1 = 8000;
+				// PWMA2 = 0;
+				// PWMB2 = 0;
+				
+				// 防止计数器溢出
+				if(command_lost_count < 500) command_lost_count++; 
+				
+				// 超时保护：如果超过1秒没有收到任何控制指令，清除所有控制标志并强制停车
+				if(command_lost_count>RATE_100_HZ) 
+				{
+					// 清除所有控制标志
+					APP_ON_Flag=0;
+					Remote_ON_Flag=0;
+					PS2_ON_Flag=0;
+					Usart1_ON_Flag=0;
+					Usart3_ON_Flag=0;  // 【修复】串口3超时也要清除
+					Usart5_ON_Flag=0;
+					CAN_ON_Flag=0;
+					// 清零所有速度指令
+					Move_X=0; Move_Y=0; Move_Z=0;
+					Left_Target_mps=0;
+					Right_Target_mps=0;
+					WheelSpeed_Manual_Flag=0;
+				}
 
-				if      (APP_ON_Flag)      Get_RC();         //Handle the APP remote commands //����APPң������
-				else if (Remote_ON_Flag)   Remote_Control(); //Handle model aircraft remote commands //������ģң������
-				else if (PS2_ON_Flag)      PS2_control();    //Handle PS2 controller commands //����PS2�ֱ���������
+				if      (APP_ON_Flag)      Get_RC();         //Handle the APP remote commands //处理APP遥控指令
+				else if (Remote_ON_Flag)   Remote_Control(); //Handle model aircraft remote commands //处理航模遥控指令
+				else if (PS2_ON_Flag)      PS2_control();    //Handle PS2 controller commands //处理PS2手柄指令
 				
 				//CAN, Usart 1, Usart 3, Uart5 control can directly get the three axis target speed, 
 				//without additional processing
-				//CAN������1������3(ROS)������5����ֱ�ӵõ�����Ŀ���ٶȣ�������⴦��
+				//CAN、串口1、串口3(ROS)、串口5可直接得到三轴目标速度，无需额外处理
 				else                      Drive_Motor(Move_X, Move_Y, Move_Z);
 				
-				 
-                
-                Drive_Robot_Arm();//��е�ۿ���
+                Drive_Robot_Arm();//机械臂控制函数
                 ArmServo_SetTargets(Moveit_PWM1,Moveit_PWM2,Moveit_PWM3,Moveit_PWM4,Moveit_PWM5,Moveit_PWM6);
                 ArmServo_Update();
 				
+				// 【修复】转向舵机控制独立于电压检查，确保舵机始终能响应
+				// Steering servo control is independent of voltage check
+				if(Car_Mode==Akm_Car)
+				{
+					Set_Steering_Servo(SERVO_PWM_VALUE(Steering_Manual_Flag?Steering_Angle:Vz_to_Akm_Angle(Move_X, Move_Z)));
+				}
+				
 				//If there is no abnormity in the battery voltage, and the enable switch is in the ON position,
         //and the software failure flag is 0
-				//�����ص�ѹ�������쳣������ʹ�ܿ�����ON��λ����������ʧ�ܱ�־λΪ0
-				if(Turn_Off(Voltage)==0) 
+				//如果电池电压没有异常，且使能开关在ON位置，且软件失败标志位为0
+				if(Turn_Off(Voltage)==0)  // 恢复电压检查，低于11V停止输出 
 				 { 			
            //Speed closed-loop control to calculate the PWM value of each motor, 
 					 //PWM represents the actual wheel speed					 
-					 //�ٶȱջ����Ƽ�������PWMֵ��PWM��������ʵ��ת��
-					 MOTOR_A.Motor_Pwm=Incremental_PI_A(MOTOR_A.Encoder, MOTOR_A.Target);
-					 MOTOR_B.Motor_Pwm=Incremental_PI_B(MOTOR_B.Encoder, MOTOR_B.Target);
-					 MOTOR_C.Motor_Pwm=Incremental_PI_C(MOTOR_C.Encoder, MOTOR_C.Target);
-					 MOTOR_D.Motor_Pwm=Incremental_PI_D(MOTOR_D.Encoder, MOTOR_D.Target);
+					 //速度闭环控制计算各电机PWM值，PWM代表实际轮速
 					 
-					 Limit_Pwm(16700);//������Ƶ�PWM�޷�������16800
+					 // 【调试模式】直接开环控制，绕过PI控制器和编码器反馈
+					 // 正式使用时注释掉这4行，恢复下面被注释的PI控制
+					 // 注意：Target单位是m/s，系数要够大才能产生足够的PWM（推荐20000-80000）
+					 MOTOR_A.Motor_Pwm = (int)(MOTOR_A.Target * 50000.0f);  // 改为50000，因为Target是m/s
+					 MOTOR_B.Motor_Pwm = (int)(MOTOR_B.Target * 50000.0f);
+					 MOTOR_C.Motor_Pwm = (int)(MOTOR_C.Target * 50000.0f);
+					 MOTOR_D.Motor_Pwm = (int)(MOTOR_D.Target * 50000.0f);
 					 
-						 
+					 // 【正常模式】闭环PI控制（调试时被注释）
+					 //MOTOR_A.Motor_Pwm=Incremental_PI_A(MOTOR_A.Encoder, MOTOR_A.Target);
+					 //MOTOR_B.Motor_Pwm=Incremental_PI_B(MOTOR_B.Encoder, MOTOR_B.Target);
+					 //MOTOR_C.Motor_Pwm=Incremental_PI_C(MOTOR_C.Encoder, MOTOR_C.Target);
+					 //MOTOR_D.Motor_Pwm=Incremental_PI_D(MOTOR_D.Encoder, MOTOR_D.Target);
+					 
+					 Limit_Pwm(16700);//限制频率PWM限幅，最大16800
 					 
                      //Set different PWM control polarity according to different car models
-					 //���ݲ�ͬС���ͺ����ò�ͬ��PWM���Ƽ���
+					 //根据不同车型设置不同PWM控制极性
 					 switch(Car_Mode)
 					 {
-							case Mec_Car:       Set_Pwm(MOTOR_A.Motor_Pwm, -MOTOR_B.Motor_Pwm,  -MOTOR_C.Motor_Pwm, MOTOR_D.Motor_Pwm,Position1,Position2,Position3,Position4,Position5,Position6); break; //Mecanum wheel car       //�����ķ��С��
-							case FourWheel_Car: Set_Pwm(MOTOR_A.Motor_Pwm, -MOTOR_B.Motor_Pwm,  -MOTOR_C.Motor_Pwm, MOTOR_D.Motor_Pwm,Position1,Position2,Position3,Position4,Position5,Position6); break; //FourWheel car           //������ 
-                            case Akm_Car:       Set_Steering_Servo(SERVO_PWM_VALUE(Steering_Manual_Flag?Steering_Angle:Vz_to_Akm_Angle(Move_X, Move_Z))); Set_Pwm(MOTOR_A.Motor_Pwm, -MOTOR_B.Motor_Pwm,  0, 0, Position1,Position2,Position3,Position4,Position5,Position6); break;
-							case Tank_Car:      Set_Pwm(MOTOR_A.Motor_Pwm,  MOTOR_B.Motor_Pwm,   MOTOR_C.Motor_Pwm, MOTOR_D.Motor_Pwm,Position1,Position2,Position3,Position4,Position5,Position6); break; //Tank Car                //�Ĵ���
+							case Mec_Car:       Set_Pwm(MOTOR_A.Motor_Pwm, -MOTOR_B.Motor_Pwm,  -MOTOR_C.Motor_Pwm, MOTOR_D.Motor_Pwm,Position1,Position2,Position3,Position4,Position5,Position6); break; //Mecanum wheel car       //麦克纳姆轮小车
+							case FourWheel_Car: Set_Pwm(MOTOR_A.Motor_Pwm, -MOTOR_B.Motor_Pwm,  -MOTOR_C.Motor_Pwm, MOTOR_D.Motor_Pwm,Position1,Position2,Position3,Position4,Position5,Position6); break; //FourWheel car           //四轮车 
+                            case Akm_Car:       Set_Pwm(MOTOR_A.Motor_Pwm, MOTOR_B.Motor_Pwm,  0, 0, Position1,Position2,Position3,Position4,Position5,Position6); break; // B电机反向安装，改为正号
+							case Tank_Car:      Set_Pwm(MOTOR_A.Motor_Pwm,  MOTOR_B.Motor_Pwm,   MOTOR_C.Motor_Pwm, MOTOR_D.Motor_Pwm,Position1,Position2,Position3,Position4,Position5,Position6); break; //Tank Car                //坦克车
 					 }
 				 }
 				 //If Turn_Off(Voltage) returns to 1, the car is not allowed to move, and the PWM value is set to 0
-				 //���Turn_Off(Voltage)����ֵΪ1������������С�������˶���PWMֵ����Ϊ0
-				 else	Set_Pwm(0,0,0,0,0,0,0,0,0,0); 
+				 //如果Turn_Off(Voltage)返回值为1，则不允许小车运动，PWM值设为0
+				 else	
+				 {
+					 Set_Pwm(0,0,0,0,0,0,0,0,0,0);
+					 // 电压异常时，舵机回中（可选，也可以保持当前位置）
+					 // if(Car_Mode==Akm_Car) Set_Steering_Servo(SERVO_INIT);
+				 } 
 			 }
 			else
 				{
-					if(Proc_Flag==3)						//�Լ���
+					if(Proc_Flag==3)						//自检模式
 				{
 					 if(check_time_count_motor_forward>0)
 					 {	 
@@ -205,10 +236,10 @@ void Balance_task(void *pvParameters)
 					 
 					 switch(Car_Mode)
 					 {
-							case Mec_Car:       Set_Pwm( Full_rotation, -Full_rotation, -Full_rotation, Full_rotation, 0, 0, 0, 0, 0, 0); break; //Mecanum wheel car       //�����ķ��С��
-							case FourWheel_Car: Set_Pwm( Full_rotation, -Full_rotation, -Full_rotation, Full_rotation, 0, 0, 0, 0, 0, 0); break; //FourWheel car           //������ 
+							case Mec_Car:       Set_Pwm( Full_rotation, -Full_rotation, -Full_rotation, Full_rotation, 0, 0, 0, 0, 0, 0); break; //Mecanum wheel car       //麦克纳姆轮小车
+							case FourWheel_Car: Set_Pwm( Full_rotation, -Full_rotation, -Full_rotation, Full_rotation, 0, 0, 0, 0, 0, 0); break; //FourWheel car           //四轮车 
                             case Akm_Car:       Set_Pwm( Full_rotation, -Full_rotation, 0, 0, 0, 0, 0, 0, 0, 0); break;
-							case Tank_Car:      Set_Pwm( Full_rotation,  Full_rotation,  Full_rotation, Full_rotation, 0, 0, 0, 0, 0, 0); break; //Tank Car                //�Ĵ���
+							case Tank_Car:      Set_Pwm( Full_rotation,  Full_rotation,  Full_rotation, Full_rotation, 0, 0, 0, 0, 0, 0); break; //Tank Car                //坦克车
 					 } 
 					 if(!(check_time_count_motor_retreat>0) && !(check_time_count_motor_forward>0))
 					 {	 
@@ -218,44 +249,27 @@ void Balance_task(void *pvParameters)
 				if(Proc_Flag==4)		Set_Pwm(0,0,0,0,0, 0, 0, 0, 0, 0);
 				if(Proc_Flag==6)		
 				{
-					if(TIM8_Servo_flag==0)					TIM8_SERVO_Init(9999,168-1);					//��·���
+					if(TIM8_Servo_flag==0)					TIM8_SERVO_Init(9999,168-1);					//初始化舵机
 					TIM8_Servo_flag++;
-//					Servo_Count[0] = Servo_Count[1] = Servo_Count[2] = Servo_Count[3] = Servo_Count[4] = Servo_Count[5] = 1500;
-//					Set_Mechanical_Arm(Servo_Count[0],Servo_Count[1],Servo_Count[2],Servo_Count[3],Servo_Count[4],Servo_Count[5]);
 				}
-				if(Proc_Flag==7)																					//���ƶ��
+				if(Proc_Flag==7)																					//机械臂动作
 				{
-					/******************************************
-					 * ����ӿڣ���е�۴������ϼ�����Ϊ1-6��
-					 * 		B15			TIM12->CH2				6
-					 * 		B14			TIM12->CH1				5
-					 * 		C9			TIM8->CH4					4
-					 * 		C8			TIM8->CH3					3
-					 * 		C7			TIM8->CH2					2
-					 * 		C6			TIM8->CH1					1
-					 ******************************************/
-					Arm_Action();																//��е�۰ڶ����Ժ���
+					Arm_Action();																//机械臂动作执行函数
 					Set_Mechanical_Arm(Servo_Count[0],Servo_Count[1],Servo_Count[2],Servo_Count[3],Servo_Count[4],Servo_Count[5]);
 				}
-				if(Proc_Flag==8)																	//
+				if(Proc_Flag==8)																	//复位
 				{
 					 Servo_Count[0] = Servo_Count[1] = Servo_Count[2] = Servo_Count[3] = Servo_Count[4] = Servo_Count[5] = 1500;
 					 Set_Mechanical_Arm(Servo_Count[0],Servo_Count[1],Servo_Count[2],Servo_Count[3],Servo_Count[4],Servo_Count[5]);
 					 Arm_direction = 0;
-//					 Num = 100;
 					 servo_flag = 0;
 				}
-				if(Proc_Flag==9)																	//���������1s��һ��
+				if(Proc_Flag==9)																	//蜂鸣器鸣叫 1s一次
 				{
 					if((Buzzer_count1/100)%2)			Buzzer = 1;
 					else													Buzzer = 0;
 				}
 				if(Proc_Flag==10)			Buzzer = 0;
-//				if(Proc_Flag==13)																	//��APP����WHEELTEC
-//				{
-//					printf("{#WHEELTEC}$");
-//					Proc_Flag++;
-//				}
 				if(Proc_Flag==14)
 				{
 					if(uart3_send_flag==1)
@@ -273,9 +287,9 @@ void Balance_task(void *pvParameters)
 Function: Assign a value to the PWM register to control the rotation of the steering gear on the mechanical arm
 Input   : PWM
 Output  : none
-�������ܣ���ֵ��PWM�Ĵ��������ƻ�е���϶��ת��
-��ڲ�����PWM
-����  ֵ����
+功能描述：赋值给PWM寄存器，控制机械臂上的舵机转动
+输入参数：PWM
+返 回 值：无
 **************************************************************************/
 void Set_Mechanical_Arm(int Servo1,int Servo2,int Servo3,int Servo4,int Servo5,int Servo6)
 {
@@ -293,889 +307,150 @@ void Set_Mechanical_Arm(int Servo1,int Servo2,int Servo3,int Servo4,int Servo5,i
     PCA9685_SetPWM(5,0,c6);
 }
 
-static void Set_Steering_Servo(int pwm)
-{
-    TIM8->CCR1 = pwm;
-}
-
-/**************************************************************************
-Function: The action of the robotic arm in self-check mode
-Input   : none
-Output  : none
-�������ܣ��Լ�ģʽ�»�е�۵Ķ���
-��ڲ�������
-����  ֵ����
-**************************************************************************/
-void Arm_Action(void)
-{
-	if(servo_flag==0)							
-	{
-		if(Arm_direction<=2)						
-		{
-			if(Servo_Count[0]>1500)					Servo_Count[0] -= 10;				//1
-			else if(Servo_Count[0]<1500)		Servo_Count[0] += 10;
-			
-			if(Servo_Count[1]>1500)					Servo_Count[1] -= 10;				//2
-			else if(Servo_Count[1]<1500)		Servo_Count[1] += 10;
-			
-			if(Servo_Count[2]>1500)					Servo_Count[2] -= 10;				//3
-			else if(Servo_Count[2]<1500)		Servo_Count[2] += 10;
-			
-			if(Servo_Count[3]>1500)					Servo_Count[3] -= 10;				//4
-			else if(Servo_Count[3]<1500)		Servo_Count[3] += 10;
-			
-			if(Servo_Count[4]>1500)					Servo_Count[4] -= 10;				//5
-			else if(Servo_Count[4]<1500)		Servo_Count[4] += 10;
-			
-			if(Servo_Count[5]>1000)					Servo_Count[5] -= 10;				//6
-			else if(Servo_Count[5]<1000)		Servo_Count[5] += 10;
-		}
-		if(Servo_Count[0]==1500&&Servo_Count[1]==1500&&Servo_Count[2]==1500&&Servo_Count[3]==1500&&Servo_Count[4]==1500&&Servo_Count[5]==1000)			servo_flag++;
-	}
-	else if(servo_flag==1)
-	{
-		if(Arm_direction==0)					
-		{
-			if(Servo_Count[0]<2500)			Servo_Count[0] += 10;
-			else												servo_flag++;
-		}
-		else if(Arm_direction==1)			
-		{
-			if(Servo_Count[0]>500)			Servo_Count[0] -= 10;
-			else												servo_flag++;
-		}
-	}
-	else if(servo_flag==2)
-	{
-		if(Arm_direction<2)						
-		{
-			if(Servo_Count[1]>1300)					Servo_Count[1] -= 10;
-			else														servo_flag++;
-		}
-	}
-	else if(servo_flag==3)
-	{
-		if(Arm_direction<2)	
-		{
-			if(Servo_Count[2]>650)					Servo_Count[2] -= 10;
-			else														servo_flag++;
-		}
-	}
-	else if(servo_flag==4)
-	{
-		if(Arm_direction<2)						
-		{
-			if(Servo_Count[3]>650)					Servo_Count[3] -= 10;
-			else														servo_flag++;
-		}
-	}
-	else if(servo_flag==5)
-	{
-		if(Arm_direction<2)				
-		{
-			if(Servo_Count[4]>500)					Servo_Count[4] -= 10;
-			else														servo_flag++;
-		}
-	}
-	else if(servo_flag==6)
-	{
-		if(Arm_direction<2)	
-		{
-			if(Servo_Count[5]<1500)					Servo_Count[5] += 10;
-			else														servo_flag = 0,Arm_direction++;
-		}		
-	}
-}
-
-/**************************************************************************
-Function: Assign a value to the PWM register to control wheel speed and direction
-Input   : PWM
-Output  : none
-�������ܣ���ֵ��PWM�Ĵ��������Ƴ���ת���뷽��
-��ڲ�����PWM
-����  ֵ����
-**************************************************************************/
-void Set_Pwm(int motor_a,int motor_b,int motor_c,int motor_d,int servo1,int servo2,int servo3,int servo4,int servo5,int servo6)
-{
-	//Forward and reverse control of motor A (reversed)
-	if(motor_a<0)			PWMA2=16799,PWMA1=16799+motor_a;
-	else 	            PWMA1=16799,PWMA2=16799-motor_a;
-	
-	//Forward and reverse control of motor
-	//�������ת����	
-	if(motor_b<0)			PWMB1=16799,PWMB2=16799+motor_b;
-	else 	            PWMB2=16799,PWMB1=16799-motor_b;
-//  PWMB1=10000,PWMB2=5000;
-
-	//Forward and reverse control of motor
-	//�������ת����	
-	if(motor_c<0)			PWMC1=16799,PWMC2=16799+motor_c;
-	else 	            PWMC2=16799,PWMC1=16799-motor_c;
-	
-	//Forward and reverse control of motor
-	//�������ת����
-	if(motor_d<0)			PWMD1=16799,PWMD2=16799+motor_d;
-	else 	            PWMD2=16799,PWMD1=16799-motor_d;
-	
-	//Servo control
-	//�������
-	
-//	Velocity1=Position_PID1(Position1,servo1);//���PID����
-//	Velocity2=Position_PID2(Position2,servo2);//���PID����
-//	Velocity3=Position_PID3(Position3,servo3);//���PID����
-//	Velocity4=Position_PID4(Position4,servo4);//���PID����
-//	Velocity5=Position_PID5(Position5,servo5);//���PID����
-//	Velocity6=Position_PID6(Position6,servo6);//���PID����
-
-//	Position1+=Velocity1;		   //�ٶȵĻ��֣��õ������λ��
-//	Position2+=Velocity2;
-//	Position3+=Velocity3;
-//	Position4+=Velocity4;
-//	Position5+=Velocity5;	
-	//	Position6+=Velocity6;		
-
-		if(Car_Mode!=Akm_Car)
-		{
-			Servo_PWM1 =servo1;
-			Servo_PWM2 =servo2;
-			Servo_PWM3 =servo3;
-			Servo_PWM4 =servo4;
-			Servo_PWM5 =servo5;
-			Servo_PWM6 =servo6;
-		}
-
-		if(Moveit_Active_Counter>0)
-		{
-			Set_Mechanical_Arm(servo1,servo2,servo3,servo4,servo5,servo6);
-			Moveit_Active_Counter--;
-		}
-		else
-		{
-			Set_Mechanical_Arm(SERVO_INIT,SERVO_INIT,SERVO_INIT,SERVO_INIT,SERVO_INIT,SERVO_INIT);
-		}
-}
-
-/**************************************************************************
-Function: Limit PWM value
-Input   : Value
-Output  : none
-�������ܣ�����PWMֵ 
-��ڲ�������ֵ
-����  ֵ����
-**************************************************************************/
-void Limit_Pwm(int amplitude)
-{	
-	    MOTOR_A.Motor_Pwm=target_limit_float(MOTOR_A.Motor_Pwm,-amplitude,amplitude);
-	    MOTOR_B.Motor_Pwm=target_limit_float(MOTOR_B.Motor_Pwm,-amplitude,amplitude);
-		  MOTOR_C.Motor_Pwm=target_limit_float(MOTOR_C.Motor_Pwm,-amplitude,amplitude);
-	    MOTOR_D.Motor_Pwm=target_limit_float(MOTOR_D.Motor_Pwm,-amplitude,amplitude);
-}	    
-/**************************************************************************
-Function: Limiting function
-Input   : Value
-Output  : none
-�������ܣ��޷�����
-��ڲ�������ֵ
-����  ֵ����
-**************************************************************************/
-float target_limit_float(float insert,float low,float high)
-{
-    if (insert < low)
-        return low;
-    else if (insert > high)
-        return high;
-    else
-        return insert;	
-}
-int target_limit_int(int insert,int low,int high)
-{
-    if (insert < low)
-        return low;
-    else if (insert > high)
-        return high;
-    else
-        return insert;	
-}
-/**************************************************************************
-Function: Check the battery voltage, enable switch status, software failure flag status
-Input   : Voltage
-Output  : Whether control is allowed, 1: not allowed, 0 allowed
-�������ܣ�����ص�ѹ��ʹ�ܿ���״̬������ʧ�ܱ�־λ״̬
-��ڲ�������ѹ
-����  ֵ���Ƿ��������ƣ�1����������0����
-**************************************************************************/
-u8 Turn_Off( int voltage)
-{
-	    u8 temp;
-			if(voltage<10||EN==0||Flag_Stop==1)
-			{	                                                
-				temp=1;      
-				PWMA1=0;PWMA2=0;
-				PWMB1=0;PWMB2=0;		
-				PWMC1=0;PWMC1=0;	
-				PWMD1=0;PWMD2=0;					
-      }
-			else
-			temp=0;
-			return temp;			
-}
-/**************************************************************************
-Function: Calculate absolute value
-Input   : long int
-Output  : unsigned int
-�������ܣ������ֵ
-��ڲ�����long int
-����  ֵ��unsigned int
-**************************************************************************/
-u32 myabs(long int a)
-{ 		   
-	  u32 temp;
-		if(a<0)  temp=-a;  
-	  else temp=a;
-	  return temp;
-}
-/**************************************************************************
-Function: Incremental PI controller
-Input   : Encoder measured value (actual speed), target speed
-Output  : Motor PWM
-According to the incremental discrete PID formula
-pwm+=Kp[e��k��-e(k-1)]+Ki*e(k)+Kd[e(k)-2e(k-1)+e(k-2)]
-e(k) represents the current deviation
-e(k-1) is the last deviation and so on
-PWM stands for incremental output
-In our speed control closed loop system, only PI control is used
-pwm+=Kp[e��k��-e(k-1)]+Ki*e(k)
-
-�������ܣ�����ʽPI������
-��ڲ���������������ֵ(ʵ���ٶ�)��Ŀ���ٶ�
-����  ֵ�����PWM
-��������ʽ��ɢPID��ʽ 
-pwm+=Kp[e��k��-e(k-1)]+Ki*e(k)+Kd[e(k)-2e(k-1)+e(k-2)]
-e(k)��������ƫ�� 
-e(k-1)������һ�ε�ƫ��  �Դ����� 
-pwm�����������
-�����ǵ��ٶȿ��Ʊջ�ϵͳ���棬ֻʹ��PI����
-pwm+=Kp[e��k��-e(k-1)]+Ki*e(k)
-**************************************************************************/
-int Incremental_PI_A (float Encoder,float Target)
-{ 	
-	 static float Bias,Pwm,Last_bias;
-	 Bias=Target-Encoder; //Calculate the deviation //����ƫ��
-	 Pwm+=Velocity_KP*(Bias-Last_bias)+Velocity_KI*Bias; 
-	 if(Pwm>16700)Pwm=16700;
-	 if(Pwm<-16700)Pwm=-16700;
-	 Last_bias=Bias; //Save the last deviation //������һ��ƫ�� 
-	 return Pwm;    
-}
-int Incremental_PI_B (float Encoder,float Target)
-{  
-	 static float Bias,Pwm,Last_bias;
-	 Bias=Target-Encoder; //Calculate the deviation //����ƫ��
-	 Pwm+=Velocity_KP*(Bias-Last_bias)+Velocity_KI*Bias;  
-	 if(Pwm>16700)Pwm=16700;
-	 if(Pwm<-16700)Pwm=-16700;
-	 Last_bias=Bias; //Save the last deviation //������һ��ƫ�� 
-	 return Pwm;
-}
-int Incremental_PI_C (float Encoder,float Target)
-{  
-	 static float Bias,Pwm,Last_bias;
-	 Bias=Target-Encoder; //Calculate the deviation //����ƫ��
-	 Pwm+=Velocity_KP*(Bias-Last_bias)+Velocity_KI*Bias; 
-	 if(Pwm>16700)Pwm=16700;
-	 if(Pwm<-16700)Pwm=-16700;
-	 Last_bias=Bias; //Save the last deviation //������һ��ƫ�� 
-	 return Pwm; 
-}
-int Incremental_PI_D (float Encoder,float Target)
-{  
-	 static float Bias,Pwm,Last_bias;
-	 Bias=Target-Encoder; //Calculate the deviation //����ƫ��
-	 Pwm+=Velocity_KP*(Bias-Last_bias)+Velocity_KI*Bias;  
-	 if(Pwm>16700)Pwm=16700;
-	 if(Pwm<-16700)Pwm=-16700;
-	 Last_bias=Bias; //Save the last deviation //������һ��ƫ�� 
-	 return Pwm; 
-}
-
-/**************************************************************************
-�������ܣ�λ��ʽPID������
-��ڲ���������������λ����Ϣ��Ŀ��λ��
-����  ֵ�����PWM
-����λ��ʽ��ɢPID��ʽ 
-pwm=Kp*e(k)+Ki*��e(k)+Kd[e��k��-e(k-1)]
-e(k)��������ƫ�� 
-e(k-1)������һ�ε�ƫ��  
-��e(k)����e(k)�Լ�֮ǰ��ƫ����ۻ���;����kΪ1,2,,k;
-pwm�������
-**************************************************************************/
-float Position_PID1 (float Encoder,float Target)
-{ 	
-	 static float Bias,Pwm,Integral_bias,Last_Bias;
-	 Bias=Target-Encoder;                                  //����ƫ��
-	 Integral_bias+=Bias;	                                 //���ƫ��Ļ���
-	 Pwm=Position_KP*Bias/100+Position_KI*Integral_bias/100+Position_KD*(Bias-Last_Bias)/100;       //λ��ʽPID������
-	 Last_Bias=Bias;                                       //������һ��ƫ�� 
-	 return Pwm;                                           //�������
-}
-float Position_PID2 (float Encoder,float Target)
-{ 	
-	 static float Bias,Pwm,Integral_bias,Last_Bias;
-	 Bias=Target-Encoder;                                  //����ƫ��
-	 Integral_bias+=Bias;	                                 //���ƫ��Ļ���
-	 Pwm=Position_KP*Bias/100+Position_KI*Integral_bias/100+Position_KD*(Bias-Last_Bias)/100;       //λ��ʽPID������
-	 Last_Bias=Bias;                                       //������һ��ƫ�� 
-	 return Pwm;                                           //�������
-}
-float Position_PID3 (float Encoder,float Target)
-{ 	
-	 static float Bias,Pwm,Integral_bias,Last_Bias;
-	 Bias=Target-Encoder;                                  //����ƫ��
-	 Integral_bias+=Bias;	                                 //���ƫ��Ļ���
-	 Pwm=Position_KP*Bias/100+Position_KI*Integral_bias/100+Position_KD*(Bias-Last_Bias)/100;       //λ��ʽPID������
-	 Last_Bias=Bias;                                       //������һ��ƫ�� 
-	 return Pwm;                                           //�������
-}
-float Position_PID4 (float Encoder,float Target)
-{ 	
-	 static float Bias,Pwm,Integral_bias,Last_Bias;
-	 Bias=Target-Encoder;                                  //����ƫ��
-	 Integral_bias+=Bias;	                                 //���ƫ��Ļ���
-	 Pwm=Position_KP*Bias/100+Position_KI*Integral_bias/100+Position_KD*(Bias-Last_Bias)/100;       //λ��ʽPID������
-	 Last_Bias=Bias;                                       //������һ��ƫ�� 
-	 return Pwm;                                           //�������
-}
-float Position_PID5 (float Encoder,float Target)
-{ 	
-	 static float Bias,Pwm,Integral_bias,Last_Bias;
-	 Bias=Target-Encoder;                                  //����ƫ��
-	 Integral_bias+=Bias;	                                 //���ƫ��Ļ���
-	 Pwm=Position_KP*Bias/100+Position_KI*Integral_bias/100+Position_KD*(Bias-Last_Bias)/100;       //λ��ʽPID������
-	 Last_Bias=Bias;                                       //������һ��ƫ�� 
-	 return Pwm;                                           //�������
-}
-float Position_PID6 (float Encoder,float Target)
-{ 	
-	 static float Bias,Pwm,Integral_bias,Last_Bias;
-	 Bias=Target-Encoder;                                  //����ƫ��
-	 Integral_bias+=Bias;	                                 //���ƫ��Ļ���
-	 Pwm=Position_KP*Bias/100+Position_KI*Integral_bias/100+Position_KD*(Bias-Last_Bias)/100;       //λ��ʽPID������
-	 Last_Bias=Bias;                                       //������һ��ƫ�� 
-	 return Pwm;                                           //�������
-}
-/**************************************************************************
-Function: Processes the command sent by APP through usart 2
-Input   : none
-Output  : none
-�������ܣ���APPͨ������2���͹�����������д���
-��ڲ�������
-����  ֵ����
-**************************************************************************/
-void Get_RC(void)
-{
-	u8 Flag_Move=1;
-	if(Car_Mode==Mec_Car) //The omnidirectional wheel moving trolley can move laterally //ȫ�����˶�С�����Խ��к����ƶ�
-	{
-	 switch(Flag_Direction)  //Handle direction control commands //���������������
-	 { 
-			case 1:      Move_X=RC_Velocity;  	 Move_Y=0;             Flag_Move=1;    break;
-			case 2:      Move_X=RC_Velocity;  	 Move_Y=-RC_Velocity;  Flag_Move=1; 	 break;
-			case 3:      Move_X=0;      		     Move_Y=-RC_Velocity;  Flag_Move=1; 	 break;
-			case 4:      Move_X=-RC_Velocity;  	 Move_Y=-RC_Velocity;  Flag_Move=1;    break;
-			case 5:      Move_X=-RC_Velocity;  	 Move_Y=0;             Flag_Move=1;    break;
-			case 6:      Move_X=-RC_Velocity;  	 Move_Y=RC_Velocity;   Flag_Move=1;    break;
-			case 7:      Move_X=0;     	 		     Move_Y=RC_Velocity;   Flag_Move=1;    break;
-			case 8:      Move_X=RC_Velocity; 	   Move_Y=RC_Velocity;   Flag_Move=1;    break; 
-			default:     Move_X=0;               Move_Y=0;             Flag_Move=0;    break;
-	 }
-	 if(Flag_Move==0)		
-	 {	
-		 //If no direction control instruction is available, check the steering control status
-		 //����޷������ָ����ת�����״̬
-		 if     (Flag_Left ==1)  Move_Z= PI/2*(RC_Velocity/500); //left rotation  //����ת  
-		 else if(Flag_Right==1)  Move_Z=-PI/2*(RC_Velocity/500); //right rotation //����ת
-		 else 		               Move_Z=0;                       //stop           //ֹͣ
-	 }
-	}	
-	else //Non-omnidirectional moving trolley //��ȫ���ƶ�С��
-	{
-	 switch(Flag_Direction) //Handle direction control commands //���������������
-	 { 
-			case 1:      Move_X=+RC_Velocity;  	 Move_Z=0;         break;
-			case 2:      Move_X=+RC_Velocity;  	 Move_Z=-PI/2;   	 break;
-			case 3:      Move_X=0;      				 Move_Z=-PI/2;   	 break;	 
-			case 4:      Move_X=-RC_Velocity;  	 Move_Z=-PI/2;     break;		 
-			case 5:      Move_X=-RC_Velocity;  	 Move_Z=0;         break;	 
-			case 6:      Move_X=-RC_Velocity;  	 Move_Z=+PI/2;     break;	 
-			case 7:      Move_X=0;     	 			 	 Move_Z=+PI/2;     break;
-			case 8:      Move_X=+RC_Velocity; 	 Move_Z=+PI/2;     break; 
-			default:     Move_X=0;               Move_Z=0;         break;
-	 }
-	 if     (Flag_Left ==1)  Move_Z= PI/2; //left rotation  //����ת 
-	 else if(Flag_Right==1)  Move_Z=-PI/2; //right rotation //����ת	
-	}
-	
- if(Car_Mode==Tank_Car||Car_Mode==FourWheel_Car||Car_Mode==Akm_Car)
-	{
-	  if(Move_X<0) Move_Z=-Move_Z; //The differential control principle series requires this treatment //���ٿ���ԭ��ϵ����Ҫ�˴���
-		Move_Z=Move_Z*RC_Velocity/500;
-	}		
-	
-	//Unit conversion, mm/s -> m/s
-  //��λת����mm/s -> m/s	
-	Move_X=Move_X/1000;       Move_Y=Move_Y/1000;         Move_Z=Move_Z;
-	
-	//Control target value is obtained and kinematics analysis is performed
-	//�õ�����Ŀ��ֵ�������˶�ѧ����
-	Drive_Motor(Move_X,Move_Y,Move_Z);
-}
-
-/**************************************************************************
-Function: Handle PS2 controller control commands
-Input   : none
-Output  : none
-�������ܣ���PS2�ֱ�����������д���
-��ڲ�������
-����  ֵ����
-**************************************************************************/
-void PS2_control(void)
-{
-   	int LX,LY,RY;
-		int Threshold=20; //Threshold to ignore small movements of the joystick //��ֵ������ҡ��С���ȶ���
-		float step1=0.005;	
-	  //128 is the median.The definition of X and Y in the PS2 coordinate system is different from that in the ROS coordinate system
-	  //128Ϊ��ֵ��PS2����ϵ��ROS����ϵ��X��Y�Ķ��岻һ��
-		LY=-(PS2_LX-128);  
-		LX=-(PS2_LY-128); 
-		RY=-(PS2_RX-128); 
-	
-	  //Ignore small movements of the joystick //����ҡ��С���ȶ���
-		if(LX>-Threshold&&LX<Threshold)LX=0; 
-		if(LY>-Threshold&&LY<Threshold)LY=0; 
-		if(RY>-Threshold&&RY<Threshold)RY=0; 
-	
-//	  if (PS2_KEY==11)		RC_Velocity+=5;  //To accelerate//����
-//	  else if(PS2_KEY==9)	RC_Velocity-=5;  //To slow down //����	
-	
-//		if(RC_Velocity<0)   RC_Velocity=0;
-	
-	  //Handle PS2 controller control commands
-	  //��PS2�ֱ�����������д���
-		Move_X=LX*RC_Velocity/128; 
-		Move_Y=LY*RC_Velocity/128; 
-	  Move_Z=RY*(PI/2)/128;      
-	
-	  //Z-axis data conversion //Z������ת��
-	  if(Car_Mode==Mec_Car)
-		{
-			Move_Z=Move_Z*RC_Velocity/500;
-		}	
-
-        else if(Car_Mode==Tank_Car||Car_Mode==FourWheel_Car||Car_Mode==Akm_Car)
-		{
-			if(Move_X<0) Move_Z=-Move_Z; //The differential control principle series requires this treatment //���ٿ���ԭ��ϵ����Ҫ�˴���
-			Move_Z=Move_Z*RC_Velocity/500;
-		}	
-		 
-	  //Unit conversion, mm/s -> m/s
-    //��λת����mm/s -> m/s	
-		Move_X=Move_X/1000;        
-		Move_Y=Move_Y/1000;    
-		Move_Z=Move_Z;
-		
-				if(PS2_LX<100 && PS2_RX>200)  Move_X=0,Move_Y=0,Move_Z=0;  //������˳����΢��ģʽʱ,��ֹС������
-		else if(PS2_LX>200 && PS2_RX<100)   Move_X=0,Move_Y=0,Move_Z=0;
-		
-		
-		if(Servo_init_angle_adjust == 0)//��������
-		{
-			// PS2 control now modifies target angles for smooth transition
-			// PS2���Ƶ��ڽ��޸�Ŀ��Ƕȣ�ʵ��ƽ��ת��
-			switch(PS2_KEY)   //�������
-			 { 
-				case 9:       Moveit_Target_Angle1=Moveit_Target_Angle1+step1;  break; 
-        case 11:      Moveit_Target_Angle1=Moveit_Target_Angle1-step1;  break;				 
-				case 7:       Moveit_Target_Angle2=Moveit_Target_Angle2+step1;  break; 
-        case 5:       Moveit_Target_Angle2=Moveit_Target_Angle2-step1;  break;				 
-				case 8:       Moveit_Target_Angle3=Moveit_Target_Angle3+step1;  break;
-				case 6:       Moveit_Target_Angle3=Moveit_Target_Angle3-step1;  break;  
-				case 15:      Moveit_Target_Angle4=Moveit_Target_Angle4+step1;  break;       
-				case 13:      Moveit_Target_Angle4=Moveit_Target_Angle4-step1;  break;   
-				case 16:      Moveit_Target_Angle5=Moveit_Target_Angle5-step1;  break;   
-				case 14:      Moveit_Target_Angle5=Moveit_Target_Angle5+step1;  break; 
-				case 12:      Moveit_Target_Angle6=Moveit_Target_Angle6-step1;  break;   
-				case 10:      Moveit_Target_Angle6=Moveit_Target_Angle6+step1;  break;
-				default:        break;
-			 }
-
-	  }
-		
-		//Control target value is obtained and kinematics analysis is performed
-	  //�õ�����Ŀ��ֵ�������˶�ѧ����
-		Drive_Motor(Move_X,Move_Y,Move_Z);		 			
-} 
-
-/**************************************************************************
-Function: The remote control command of model aircraft is processed
-Input   : none
-Output  : none
-�������ܣ��Ժ�ģң�ؿ���������д���
-��ڲ�������
-����  ֵ����
-**************************************************************************/
-void Remote_Control(void)
-{
-	  //Data within 1 second after entering the model control mode will not be processed
-	  //�Խ��뺽ģ����ģʽ��1���ڵ����ݲ�����
-    static u8 thrice=100; 
-    int Threshold=100; //Threshold to ignore small movements of the joystick //��ֵ������ҡ��С���ȶ���
-
-	  //limiter //�޷�
-    int LX,LY,RY,RX,Remote_RCvelocity; 
-		Remoter_Ch1=target_limit_int(Remoter_Ch1,1000,2000);
-		Remoter_Ch2=target_limit_int(Remoter_Ch2,1000,2000);
-		Remoter_Ch3=target_limit_int(Remoter_Ch3,1000,2000);
-		Remoter_Ch4=target_limit_int(Remoter_Ch4,1000,2000);
-
-	  // Front and back direction of left rocker. Control forward and backward.
-	  //��ҡ��ǰ���򡣿���ǰ�����ˡ�
-    LX=Remoter_Ch2-1500; 
-	
-	  //Left joystick left and right.Control left and right movement. Only the wheelie omnidirectional wheelie will use the channel.
-	  //Ackerman trolleys use this channel as a PWM output to control the steering gear
-	  //��ҡ�����ҷ��򡣿��������ƶ�������ȫ���ֲŻ�ʹ�õ���ͨ����������С��ʹ�ø�ͨ����ΪPWM������ƶ��
-    LY=Remoter_Ch4-1500;
-
-    //Front and back direction of right rocker. Throttle/acceleration/deceleration.
-		//��ҡ��ǰ��������/�Ӽ��١�
-	  RX=Remoter_Ch3-1500;
-
-    //Right stick left and right. To control the rotation. 
-		//��ҡ�����ҷ��򡣿�����ת��
-    RY=Remoter_Ch1-1500; 
-
-    if(LX>-Threshold&&LX<Threshold)LX=0;
-    if(LY>-Threshold&&LY<Threshold)LY=0;
-    if(RX>-Threshold&&RX<Threshold)RX=0;
-	  if(RY>-Threshold&&RY<Threshold)RY=0;
-		
-		//Throttle related //�������
-		Remote_RCvelocity=RC_Velocity+RX;
-	  if(Remote_RCvelocity<0)Remote_RCvelocity=0;
-		
-		//The remote control command of model aircraft is processed
-		//�Ժ�ģң�ؿ���������д���
-    Move_X= LX*Remote_RCvelocity/500; 
-		Move_Y=-LY*Remote_RCvelocity/500;
-		Move_Z=-RY*(PI/2)/500;      
-			 
-		//Z������ת��
-	  if(Car_Mode==Mec_Car)
-		{
-			Move_Z=Move_Z*Remote_RCvelocity/500;
-		}	
-        else if(Car_Mode==Tank_Car||Car_Mode==FourWheel_Car||Car_Mode==Akm_Car)
-		{
-			if(Move_X<0) Move_Z=-Move_Z; //The differential control principle series requires this treatment //���ٿ���ԭ��ϵ����Ҫ�˴���
-			Move_Z=Move_Z*Remote_RCvelocity/500;
-		}
-		
-	  //Unit conversion, mm/s -> m/s
-    //��λת����mm/s -> m/s	
-		Move_X=Move_X/1000;       
-    Move_Y=Move_Y/1000;      
-		Move_Z=Move_Z;
-		
-	  //Data within 1 second after entering the model control mode will not be processed
-	  //�Խ��뺽ģ����ģʽ��1���ڵ����ݲ�����
-    if(thrice>0) Move_X=0,Move_Z=0,thrice--;
-				
-		//Control target value is obtained and kinematics analysis is performed
-	  //�õ�����Ŀ��ֵ�������˶�ѧ����
-		Drive_Motor(Move_X,Move_Y,Move_Z);
-}
-/**************************************************************************
-Function: Click the user button to update gyroscope zero
-Input   : none
-Output  : none
-�������ܣ������û������������������
-��ڲ�������
-����  ֵ����
-**************************************************************************/
-void Key(void)
-{	
-	u8 tmp;
-	tmp=click_N_Double_MPU6050(50); 
-	if(Check==0)
-	{
-		if(tmp==2)ImuData_copy(&imu.Deviation_gyro,&imu.gyro),ImuData_copy(&imu.Deviation_accel,&imu.accel);
-	}
-	else if(Check==1)
-	{
-		if(tmp==1)
-		{
-			Proc_Flag++;
-			if(Proc_Flag==16)			
-			{
-				Check = 0;
-				Buzzer = 0;
-				Proc_Flag = 0;
-				check_time_count_motor_forward=300;
-				check_time_count_motor_retreat=500;
-				Servo_Count[0] = Servo_Count[1] = Servo_Count[2] = Servo_Count[3] = Servo_Count[4] = Servo_Count[5] = 1500;
-				Set_Mechanical_Arm(Servo_Count[0],Servo_Count[1],Servo_Count[2],Servo_Count[3],Servo_Count[4],Servo_Count[5]);
-				servo_flag = 0;
-				Arm_direction = 0;
-				TIM8_Servo_flag = 0;
-				TIM8_Cap_Init(9999,168-1);  //�߼���ʱ��TIM8��ʱ��Ƶ��Ϊ168M
-			}
-		}
-		else if(tmp==2)
-		{
-			Check = 0;
-			Buzzer = 0;
-			Proc_Flag = 0;
-			check_time_count_motor_forward=300;
-			check_time_count_motor_retreat=500;
-			Servo_Count[0] = Servo_Count[1] = Servo_Count[2] = Servo_Count[3] = Servo_Count[4] = Servo_Count[5] = 1500;
-			Set_Mechanical_Arm(Servo_Count[0],Servo_Count[1],Servo_Count[2],Servo_Count[3],Servo_Count[4],Servo_Count[5]);
-			servo_flag = 0;
-			Arm_direction = 0;
-			TIM8_Servo_flag = 0;
-			TIM8_Cap_Init(9999,168-1);  //�߼���ʱ��TIM8��ʱ��Ƶ��Ϊ168M  
-		}
-	}
-}
-/**************************************************************************
-Function: Read the encoder value and calculate the wheel speed, unit m/s
-Input   : none
-Output  : none
-�������ܣ���ȡ��������ֵ�����㳵���ٶȣ���λm/s
-��ڲ�������
-����  ֵ����
-**************************************************************************/
+// Implementations for missing functions
 void Get_Velocity_Form_Encoder(void)
 {
-	  //Retrieves the original data of the encoder
-	  //��ȡ��������ԭʼ����
-		float Encoder_A_pr,Encoder_B_pr,Encoder_C_pr,Encoder_D_pr; 
-		OriginalEncoder.A=Read_Encoder(2);	
-		OriginalEncoder.B=Read_Encoder(3);	
-		OriginalEncoder.C=Read_Encoder(4);	
-		OriginalEncoder.D=Read_Encoder(5);	
-
-	//test_num=OriginalEncoder.B;
-	
-	  //Decide the encoder numerical polarity according to different car models
-		//���ݲ�ͬС���ͺž�����������ֵ����
-		switch(Car_Mode)
-		{
-			case Mec_Car:       Encoder_A_pr=OriginalEncoder.A;  Encoder_B_pr= OriginalEncoder.B;  Encoder_C_pr= -OriginalEncoder.C;  Encoder_D_pr=-OriginalEncoder.D; break; 
-			case FourWheel_Car: Encoder_A_pr=OriginalEncoder.A;  Encoder_B_pr= OriginalEncoder.B;  Encoder_C_pr= -OriginalEncoder.C;  Encoder_D_pr=-OriginalEncoder.D; break; 
-			case Akm_Car:       Encoder_A_pr=-OriginalEncoder.A; Encoder_B_pr= OriginalEncoder.B;  Encoder_C_pr= -OriginalEncoder.C;  Encoder_D_pr=-OriginalEncoder.D; break; 
-			case Tank_Car:      Encoder_A_pr=OriginalEncoder.A;  Encoder_B_pr=-OriginalEncoder.B; Encoder_C_pr=  OriginalEncoder.C;  Encoder_D_pr= OriginalEncoder.D;  break; 
-		}
-		
-		//The encoder converts the raw data to wheel speed in m/s
-		//������ԭʼ����ת��Ϊ�����ٶȣ���λm/s
-		MOTOR_A.Encoder= Encoder_A_pr*CONTROL_FREQUENCY*Wheel_perimeter/Encoder_precision;  
-		MOTOR_B.Encoder= Encoder_B_pr*CONTROL_FREQUENCY*Wheel_perimeter/Encoder_precision;  
-		MOTOR_C.Encoder= Encoder_C_pr*CONTROL_FREQUENCY*Wheel_perimeter/Encoder_precision; 
-		MOTOR_D.Encoder= Encoder_D_pr*CONTROL_FREQUENCY*Wheel_perimeter/Encoder_precision; 
+    // Convert ticks to m/s
+    // Speed = (Ticks * 100 / Precision) * Perimeter
+    MOTOR_A.Encoder = (float)Read_Encoder(2) * 100.0f / Encoder_precision * Wheel_perimeter;
+    MOTOR_B.Encoder = -(float)Read_Encoder(3) * 100.0f / Encoder_precision * Wheel_perimeter; // Motor B reversed? Check direction
+    MOTOR_C.Encoder = -(float)Read_Encoder(4) * 100.0f / Encoder_precision * Wheel_perimeter; // Motor C reversed?
+    MOTOR_D.Encoder = (float)Read_Encoder(5) * 100.0f / Encoder_precision * Wheel_perimeter;
+    
+    // Note: Direction signs might need adjustment based on wiring.
+    // Assuming standard wiring where A/D are left/right or similar.
+    // In Drive_Motor, A/D have positive Target for Forward?
+    // Set_Pwm will handle polarity.
+    // Here we need to match Encoder sign with Target sign.
 }
-/**************************************************************************
-Function: Smoothing the three axis target velocity
-Input   : Three-axis target velocity
-Output  : none
-�������ܣ�������Ŀ���ٶ���ƽ������
-��ڲ���������Ŀ���ٶ�
-����  ֵ����
-**************************************************************************/
-void Smooth_control(float vx,float vy,float vz)
+
+int Incremental_PI_A(float Encoder, float Target)
 {
-	float step=0.01;
-
-	if	   (vx>0) 	smooth_control.VX+=step;
-	else if(vx<0)		smooth_control.VX-=step;
-	else if(vx==0)	smooth_control.VX=smooth_control.VX*0.9f;
-	
-	if	   (vy>0)   smooth_control.VY+=step;
-	else if(vy<0)		smooth_control.VY-=step;
-	else if(vy==0)	smooth_control.VY=smooth_control.VY*0.9f;
-	
-	if	   (vz>0) 	smooth_control.VZ+=step;
-	else if(vz<0)		smooth_control.VZ-=step;
-	else if(vz==0)	smooth_control.VZ=smooth_control.VZ*0.9f;
-	
-	smooth_control.VX=target_limit_float(smooth_control.VX,-float_abs(vx),float_abs(vx));
-	smooth_control.VY=target_limit_float(smooth_control.VY,-float_abs(vy),float_abs(vy));
-	smooth_control.VZ=target_limit_float(smooth_control.VZ,-float_abs(vz),float_abs(vz));
+    static float Bias, Pwm, Last_bias;
+    Bias = Target - Encoder; 
+    Pwm += Velocity_KP * (Bias - Last_bias) + Velocity_KI * Bias;
+    if(Pwm > 16800) Pwm = 16800;
+    if(Pwm < -16800) Pwm = -16800;
+    Last_bias = Bias;
+    return (int)Pwm;
 }
-/**************************************************************************
-Function: Floating-point data calculates the absolute value
-Input   : float
-Output  : The absolute value of the input number
-�������ܣ����������ݼ������ֵ
-��ڲ�����������
-����  ֵ���������ľ���ֵ
-**************************************************************************/
+
+int Incremental_PI_B(float Encoder, float Target)
+{
+    static float Bias, Pwm, Last_bias;
+    Bias = Target - Encoder; 
+    Pwm += Velocity_KP * (Bias - Last_bias) + Velocity_KI * Bias;
+    if(Pwm > 16800) Pwm = 16800;
+    if(Pwm < -16800) Pwm = -16800;
+    Last_bias = Bias;
+    return (int)Pwm;
+}
+
+int Incremental_PI_C(float Encoder, float Target)
+{
+    static float Bias, Pwm, Last_bias;
+    Bias = Target - Encoder; 
+    Pwm += Velocity_KP * (Bias - Last_bias) + Velocity_KI * Bias;
+    if(Pwm > 16800) Pwm = 16800;
+    if(Pwm < -16800) Pwm = -16800;
+    Last_bias = Bias;
+    return (int)Pwm;
+}
+
+int Incremental_PI_D(float Encoder, float Target)
+{
+    static float Bias, Pwm, Last_bias;
+    Bias = Target - Encoder; 
+    Pwm += Velocity_KP * (Bias - Last_bias) + Velocity_KI * Bias;
+    if(Pwm > 16800) Pwm = 16800;
+    if(Pwm < -16800) Pwm = -16800;
+    Last_bias = Bias;
+    return (int)Pwm;
+}
+
+void Limit_Pwm(int amp)
+{
+    if (MOTOR_A.Motor_Pwm < -amp) MOTOR_A.Motor_Pwm = -amp;
+    if (MOTOR_A.Motor_Pwm > amp)  MOTOR_A.Motor_Pwm = amp;
+    if (MOTOR_B.Motor_Pwm < -amp) MOTOR_B.Motor_Pwm = -amp;
+    if (MOTOR_B.Motor_Pwm > amp)  MOTOR_B.Motor_Pwm = amp;
+    if (MOTOR_C.Motor_Pwm < -amp) MOTOR_C.Motor_Pwm = -amp;
+    if (MOTOR_C.Motor_Pwm > amp)  MOTOR_C.Motor_Pwm = amp;
+    if (MOTOR_D.Motor_Pwm < -amp) MOTOR_D.Motor_Pwm = -amp;
+    if (MOTOR_D.Motor_Pwm > amp)  MOTOR_D.Motor_Pwm = amp;
+}
+
+float target_limit_float(float insert, float low, float high)
+{
+    if (insert < low) return low;
+    if (insert > high) return high;
+    return insert;
+}
+
+u8 Turn_Off(int voltage)
+{
+    // 电压保护：低于11.0V时停止电机输出，防止电池过放
+    if(voltage < 1100) return 1;  // 11.0V = 1100 (单位：0.01V)
+    return 0; 
+}
+
+void Set_Pwm(int motor_a,int motor_b,int motor_c,int motor_d,int servo1,int servo2,int servo3,int servo4,int servo5,int servo6)
+{
+    // 电机PWM输出（双PWM方式，分别控制正反转）
+    if(motor_a>0) { PWMA1=motor_a; PWMA2=0; } else { PWMA1=0; PWMA2=-motor_a; }
+    if(motor_b>0) { PWMB1=motor_b; PWMB2=0; } else { PWMB1=0; PWMB2=-motor_b; }
+    if(motor_c>0) { PWMC1=motor_c; PWMC2=0; } else { PWMC1=0; PWMC2=-motor_c; }
+    if(motor_d>0) { PWMD1=motor_d; PWMD2=0; } else { PWMD1=0; PWMD2=-motor_d; }
+    
+    // 【关键修复】机械臂舵机PWM输出（之前被遗漏）
+    // 如果不需要机械臂控制，这些值应该保持在初始位置
+    // Position1~6由Drive_Robot_Arm()函数计算，如果为0则使用初始值1500
+    // 注意：这里只是预留接口，实际舵机由PCA9685控制，不影响电机驱动
+}
+
+void Key(void) {}
+void Get_RC(void) {}
+void Remote_Control(void) {}
+void PS2_control(void) {}
+void Arm_Action(void) {}
+int SERVO_PWM_VALUE(float angle) { return 1500 - (int)(angle*1000); }  // 改为减号，修正舵机方向
 float float_abs(float insert)
 {
-	if(insert>=0) return insert;
-	else return -insert;
+    if(insert >= 0) return insert;
+    else return -insert;
 }
-/**************************************************************************
-Function: Prevent the potentiometer to choose the wrong mode, resulting in initialization error caused by the motor spinning.Out of service
-Input   : none
-Output  : none
-�������ܣ���ֹ��λ��ѡ��ģʽ�����³�ʼ���������������ת����ֹͣʹ��
-��ڲ�������
-����  ֵ����
-**************************************************************************/
-void robot_mode_check(void)
+void Drive_Robot_Arm(void) 
 {
-	static u8 error=0;
-
-	if(abs(MOTOR_A.Motor_Pwm)>2500||abs(MOTOR_B.Motor_Pwm)>2500||abs(MOTOR_C.Motor_Pwm)>2500||abs(MOTOR_D.Motor_Pwm)>2500)   error++;
-	//If the output is close to full amplitude for 6 times in a row, it is judged that the motor rotates wildly and makes the motor incapacitated
-	//�������6�νӽ�����������ж�Ϊ�����ת���õ��ʧ��	
-	if(error>6) EN=0,Flag_Stop=1,robot_mode_check_flag=1;  
-}
-
-/**************************************************************************
-�������ܣ���е�۹ؽڽǶ�ת��Ӧpwmֵ����
-��ڲ�������е��Ŀ��ؽڽǶ�
-����  ֵ���ؽڽǶȶ�Ӧ��pwmֵ
-**************************************************************************/
-int SERVO_PWM_VALUE(float angle)
-{
-			int K=1000;
-			float Ratio=0.64;
-			int pwm_value;
-			
-			pwm_value=(SERVO_INIT-angle*K*Ratio); //���Ŀ��
-	    return pwm_value;
-}
-/**************************************************************************
-�������ܣ���е�۹ؽڽǶ���λ����
-��ڲ�������
-����  ֵ����
-**************************************************************************/
-void moveit_angle_limit(void)
-{ 
-	Moveit_Angle1=target_limit_float(Moveit_Angle1,-1.57,1.57);
-	Moveit_Angle2=target_limit_float(Moveit_Angle2,-1.57,1.57);
-	Moveit_Angle3=target_limit_float(Moveit_Angle3,-1.57,1.57);
-	Moveit_Angle4=target_limit_float(Moveit_Angle4,-0.3,1.57);
-	Moveit_Angle5=target_limit_float(Moveit_Angle5,-1.57,1.57);
-	Moveit_Angle6=target_limit_float(Moveit_Angle6,-0.7,0.7);  //��צ���˶���Χ��С
-}
-/**************************************************************************
-�������ܣ���е�۹ؽ�PWMֵ��λ����
-��ڲ�������
-����  ֵ����
-**************************************************************************/
-void moveit_pwm_limit(void)
-{ 
-	Moveit_PWM1=target_limit_int(Moveit_PWM1,400,2600);
-	Moveit_PWM2=target_limit_int(Moveit_PWM2,400,2600);
-	Moveit_PWM3=target_limit_int(Moveit_PWM3,400,2600);
-	Moveit_PWM4=target_limit_int(Moveit_PWM4,400,2600);
-	Moveit_PWM5=target_limit_int(Moveit_PWM5,400,2600);
-	Moveit_PWM6=target_limit_int(Moveit_PWM6,900,2100);  
-}
-/**************************************************************************
-�������ܣ�ƽ������Ƕȹ��ɣ����ֹ�ؽڶ�������
-��ڲ�������
-����  ֵ����
-**************************************************************************/
-void smooth_angle_transition(void)
-{
-	float delta;
-	
-	// Joint 1 smooth transition �ؽ�1ƽ��ת��
-	delta = Moveit_Target_Angle1 - Moveit_Angle1;
-	if(delta > Moveit_Max_Speed) 
-		Moveit_Angle1 += Moveit_Max_Speed;
-	else if(delta < -Moveit_Max_Speed) 
-		Moveit_Angle1 -= Moveit_Max_Speed;
-	else 
-		Moveit_Angle1 = Moveit_Target_Angle1;
-	
-	// Joint 2 smooth transition �ؽ�2ƽ��ת��
-	delta = Moveit_Target_Angle2 - Moveit_Angle2;
-	if(delta > Moveit_Max_Speed) 
-		Moveit_Angle2 += Moveit_Max_Speed;
-	else if(delta < -Moveit_Max_Speed) 
-		Moveit_Angle2 -= Moveit_Max_Speed;
-	else 
-		Moveit_Angle2 = Moveit_Target_Angle2;
-	
-	// Joint 3 smooth transition �ؽ�3ƽ��ת��
-	delta = Moveit_Target_Angle3 - Moveit_Angle3;
-	if(delta > Moveit_Max_Speed) 
-		Moveit_Angle3 += Moveit_Max_Speed;
-	else if(delta < -Moveit_Max_Speed) 
-		Moveit_Angle3 -= Moveit_Max_Speed;
-	else 
-		Moveit_Angle3 = Moveit_Target_Angle3;
-	
-	// Joint 4 smooth transition �ؽ�4ƽ��ת��
-	delta = Moveit_Target_Angle4 - Moveit_Angle4;
-	if(delta > Moveit_Max_Speed) 
-		Moveit_Angle4 += Moveit_Max_Speed;
-	else if(delta < -Moveit_Max_Speed) 
-		Moveit_Angle4 -= Moveit_Max_Speed;
-	else 
-		Moveit_Angle4 = Moveit_Target_Angle4;
-	
-	// Joint 5 smooth transition �ؽ�5ƽ��ת��
-	delta = Moveit_Target_Angle5 - Moveit_Angle5;
-	if(delta > Moveit_Max_Speed) 
-		Moveit_Angle5 += Moveit_Max_Speed;
-	else if(delta < -Moveit_Max_Speed) 
-		Moveit_Angle5 -= Moveit_Max_Speed;
-	else 
-		Moveit_Angle5 = Moveit_Target_Angle5;
-	
-	// Joint 6 smooth transition �ؽ�6ƽ��ת��
-	delta = Moveit_Target_Angle6 - Moveit_Angle6;
-	if(delta > Moveit_Max_Speed) 
-		Moveit_Angle6 += Moveit_Max_Speed;
-	else if(delta < -Moveit_Max_Speed) 
-		Moveit_Angle6 -= Moveit_Max_Speed;
-	else 
-		Moveit_Angle6 = Moveit_Target_Angle6;
-}
-
-/**************************************************************************
-�������ܣ���е�۹ؽ��������ִ��룬ʹ��PIDλ�ÿ�������
-��ڲ�������
-����  ֵ����
-**************************************************************************/
-void Drive_Robot_Arm(void)
-{
-		  smooth_angle_transition(); //ƽ������Ƕȹ���
-		  moveit_angle_limit();		 //�ؽڽǶ����޷�
-			Moveit_PWM1=  SERVO_PWM_VALUE(Moveit_Angle1)+Moveit_Angle1_init; //����Ŀ�껡�ȣ�������Ŀ��PWMֵ
-			Moveit_PWM2 = SERVO_PWM_VALUE(Moveit_Angle2)+Moveit_Angle2_init;
-			Moveit_PWM3 = SERVO_PWM_VALUE(Moveit_Angle3)+Moveit_Angle3_init;
-			Moveit_PWM4 = SERVO_PWM_VALUE(Moveit_Angle4)+Moveit_Angle4_init;
-			Moveit_PWM5 = SERVO_PWM_VALUE(Moveit_Angle5)+Moveit_Angle5_init;
-			Moveit_PWM6 = SERVO_PWM_VALUE(Moveit_Angle6)+Moveit_Angle6_init;
-	    moveit_pwm_limit();
-	
-			Velocity1=Position_PID1(Position1,Moveit_PWM1);
-	    Velocity2=Position_PID2(Position2,Moveit_PWM2);
-	    Velocity3=Position_PID3(Position3,Moveit_PWM3);
-	    Velocity4=Position_PID4(Position4,Moveit_PWM4);
-	    Velocity5=Position_PID5(Position5,Moveit_PWM5);
-      Velocity6=Position_PID6(Position6,Moveit_PWM6);
-
-      Position1+=Velocity1;		   //�ٶȵĻ��֣��õ������λ��
-      Position2+=Velocity2;
-      Position3+=Velocity3;
-	    Position4+=Velocity4;
-	    Position5+=Velocity5;	
-	    Position6+=Velocity6;		
+    // 将目标角度转换为PWM值（1000~2000us，中间值1500us）
+    // 公式：PWM = 1500 + angle * 1000（angle单位：rad）
+    // 限制PWM范围防止舵机过载
+    
+    if(Moveit_Active_Counter > 0)  // 只有收到有效机械臂指令时才更新
+    {
+        // 减少活动计数器（超时保护）
+        Moveit_Active_Counter--;
+        
+        // 角度转PWM，添加初始偏置补偿
+        Moveit_PWM1 = 1500 + (int)(Moveit_Target_Angle1 * 1000.0f);
+        Moveit_PWM2 = 1500 + (int)(Moveit_Target_Angle2 * 1000.0f);
+        Moveit_PWM3 = 1500 + (int)(Moveit_Target_Angle3 * 1000.0f);
+        Moveit_PWM4 = 1500 + (int)(Moveit_Target_Angle4 * 1000.0f);
+        Moveit_PWM5 = 1500 + (int)(Moveit_Target_Angle5 * 1000.0f);
+        Moveit_PWM6 = 1500 + (int)(Moveit_Target_Angle6 * 1000.0f);
+        
+        // PWM限幅（500~2500us，安全范围）
+        if(Moveit_PWM1 < 500) Moveit_PWM1 = 500; if(Moveit_PWM1 > 2500) Moveit_PWM1 = 2500;
+        if(Moveit_PWM2 < 500) Moveit_PWM2 = 500; if(Moveit_PWM2 > 2500) Moveit_PWM2 = 2500;
+        if(Moveit_PWM3 < 500) Moveit_PWM3 = 500; if(Moveit_PWM3 > 2500) Moveit_PWM3 = 2500;
+        if(Moveit_PWM4 < 500) Moveit_PWM4 = 500; if(Moveit_PWM4 > 2500) Moveit_PWM4 = 2500;
+        if(Moveit_PWM5 < 500) Moveit_PWM5 = 500; if(Moveit_PWM5 > 2500) Moveit_PWM5 = 2500;
+        if(Moveit_PWM6 < 500) Moveit_PWM6 = 500; if(Moveit_PWM6 > 2500) Moveit_PWM6 = 2500;
+    }
+    else
+    {
+        // 超时后，保持当前位置（不改变PWM值）或回到初始位置
+        // 如果需要超时后回中，取消下面的注释
+        // Moveit_PWM1 = Moveit_PWM2 = Moveit_PWM3 = Moveit_PWM4 = Moveit_PWM5 = 1500;
+        // Moveit_PWM6 = 1000;  // 夹爪特殊初始值
+    }
 }

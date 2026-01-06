@@ -3,23 +3,23 @@
 #include "sys.h"
 #include "system.h"
 
-#define BALANCE_TASK_PRIO		4     //Task priority //ÈÎÎñÓÅÏÈ¼¶
-#define BALANCE_STK_SIZE 		512   //Task stack size //ÈÎÎñ¶ÑÕ»´óĞ¡
+#define BALANCE_TASK_PRIO		4     //Task priority //ä»»åŠ¡ä¼˜å…ˆçº§
+#define BALANCE_STK_SIZE 		512   //Task stack size //ä»»åŠ¡å †æ ˆå¤§å°
 
 //Parameter of kinematics analysis of omnidirectional trolley
-//È«ÏòÂÖĞ¡³µÔË¶¯Ñ§·ÖÎö²ÎÊı
+//å…¨å‘è½®å°è½¦è¿åŠ¨å­¦å‚æ•°
 #define X_PARAMETER    (sqrt(3)/2.f)               
 #define Y_PARAMETER    (0.5f)    
 #define L_PARAMETER    (1.0f)
 
 extern short test_num;
 extern int robot_mode_check_flag;
-extern u8 command_lost_count; //´®¿Ú¡¢CAN¿ØÖÆÃüÁî¶ªÊ§Ê±¼ä¼ÆÊı£¬¶ªÊ§1ÃëºóÍ£Ö¹¿ØÖÆ
+extern int command_lost_count; //æ§åˆ¶æŒ‡ä»¤ä¸¢å¤±è®¡æ•°å™¨
 void Balance_task(void *pvParameters);
 void Set_Mechanical_Arm(int Servo1,int Servo2,int Servo3,int Servo4,int Servo5,int Servo6);
 void Arm_Action(void);
 void Set_Pwm(int motor_a,int motor_b,int motor_c,int motor_d,int servo1,int servo2,int servo3,int servo4,int servo5,int servo6);
-void Limit_Pwm(int amplitude);
+void Limit_Pwm(int amp);
 float target_limit_float(float insert,float low,float high);
 int target_limit_int(int insert,int low,int high);
 u8 Turn_Off( int voltage);
@@ -48,4 +48,3 @@ void moveit_angle_limit(void);
 void moveit_pwm_limit(void);
 void Drive_Robot_Arm(void);
 #endif  
-

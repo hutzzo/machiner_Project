@@ -22,7 +22,8 @@ All rights reserved
 
 //Robot software fails to flag bits
 //����������ʧ�ܱ�־λ
-u8 Flag_Stop=1;   
+// 调试模式：直接设为0跳过10秒等待，正式使用时改回1
+u8 Flag_Stop=0;  // 原值: u8 Flag_Stop=1;   
 
 //The ADC value is variable in segments, depending on the number of car models. Currently there are 6 car models
 //ADCֵ�ֶα�����ȡ����С���ͺ�������Ŀǰ��6��С���ͺ�
@@ -39,6 +40,9 @@ int Servo;
 float Steering_Angle;
 u8 Steering_Manual_Flag;
 u16 Moveit_Active_Counter;
+float Left_Target_mps;
+float Right_Target_mps;
+u8 WheelSpeed_Manual_Flag;
 
 //Default speed of remote control car, unit: mm/s
 //ң��С����Ĭ���ٶȣ���λ��mm/s
@@ -83,7 +87,7 @@ float Omni_turn_radiaus;
 //PS2 controller, Bluetooth APP, aircraft model controller, CAN communication, serial port 1, serial port 5 communication control flag bit.
 //These 6 flag bits are all 0 by default, representing the serial port 3 control mode
 //PS2�ֱ�������APP����ģ�ֱ���CANͨ�š�����1������5ͨ�ſ��Ʊ�־λ����6����־λĬ�϶�Ϊ0����������3����ģʽ
-u8 PS2_ON_Flag=0, APP_ON_Flag=0, Remote_ON_Flag=0, CAN_ON_Flag=0, Usart1_ON_Flag, Usart5_ON_Flag; 
+u8 PS2_ON_Flag=0, APP_ON_Flag=0, Remote_ON_Flag=0, CAN_ON_Flag=0, Usart1_ON_Flag=0, Usart3_ON_Flag=0, Usart5_ON_Flag=0; 
 
 //�����ɶȻ�е�۵�Ŀ��Ƕ�?
 float Moveit_Angle1=0,Moveit_Angle2=0,Moveit_Angle3=0,Moveit_Angle4=0,Moveit_Angle5=0,Moveit_Angle6=0;
@@ -219,6 +223,19 @@ void systemInit(void)
 	//Initialize the hardware interface connected to the enable switch
 	//��ʼ����ʹ�ܿ������ӵ�Ӳ���ӿ�
 	Enable_Pin();
+	
+	// ���������޸���ʼ�����������Ƶ�Ƭʹ������PC0��PC1���͸�
+	{
+		GPIO_InitTypeDef GPIO_InitStructure;
+		RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOC, ENABLE);
+		GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0 | GPIO_Pin_1;  
+		GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
+		GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+		GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz;
+		GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+		GPIO_Init(GPIOC, &GPIO_InitStructure);
+		GPIO_SetBits(GPIOC, GPIO_Pin_0 | GPIO_Pin_1);
+	}
 
   //Initialize the hardware interface connected to the OLED display
   //��ʼ����OLED��ʾ�����ӵ�Ӳ���ӿ�	
@@ -285,28 +302,78 @@ void systemInit(void)
 	
     TIM8_SERVO_Init(9999,168-1);//APB2��ʱ��Ƶ��Ϊ168M , Ƶ��=168M/((9999+1)*(167+1))=100Hz
     TIM12_SERVO_Init(9999,84-1);  //APB1��ʱ��Ƶ��Ϊ84M , Ƶ��=84M/((9999+1)*(83+1))=100Hz
-  ArmServo_Init();
-  TIM8->CCR1 = SERVO_INIT;
-  {
-      uint16_t duty = (uint16_t)((SERVO_INIT * 4096) / 20000);
-      PCA9685_SetPWM(0, 0, duty);
-      PCA9685_SetPWM(1, 0, duty);
-      PCA9685_SetPWM(2, 0, duty);
-      PCA9685_SetPWM(3, 0, duty);
-      PCA9685_SetPWM(4, 0, duty);
-      PCA9685_SetPWM(5, 0, duty);
-  }
-  Steering_Angle=0;
-  Steering_Manual_Flag=0;
-  Moveit_Active_Counter=0;
+	ArmServo_Init();
+	TIM8->CCR1 = SERVO_INIT;
+	{
+		uint16_t duty = (uint16_t)((SERVO_INIT * 4096) / 20000);
+		PCA9685_SetPWM(0, 0, duty);
+		PCA9685_SetPWM(1, 0, duty);
+		PCA9685_SetPWM(2, 0, duty);
+		PCA9685_SetPWM(3, 0, duty);
+		PCA9685_SetPWM(4, 0, duty);
+		PCA9685_SetPWM(5, 0, duty);
+	}
+	Steering_Angle=0;
+	Steering_Manual_Flag=0;
+	Moveit_Active_Counter=0;
+	Left_Target_mps=0;
+	Right_Target_mps=0;
+	WheelSpeed_Manual_Flag=0;
 
   //Initialize motor speed control and, for controlling motor speed, PWM frequency 10kHz
   //��ʼ������ٶȿ����Լ������ڿ��Ƶ���ٶȣ�PWMƵ��10KHZ
   //APB2ʱ��Ƶ��Ϊ168M����PWMΪ16799��Ƶ��=168M/((16799+1)*(0+1))=10k
+		
+		// ��ע��������PWM��GPIO��ʽ
+		// #if 1 = GPIO��ʽ�����ܵ��٣��޷����ٿ��ƣ�
+		// #if 0 = PWM��ʽ���ܵ��ٿ��ƣ�֧�ִ��ڿ���ָ��
+		#if 0  // �޸�Ϊ0����PWMģʽ����������
+		{
+			// ֱ��GPIO��������PWM��������Ӳ��������
+			GPIO_InitTypeDef GPIO_InitStructure;
+			
+			RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOB | RCC_AHB1Periph_GPIOE, ENABLE);
+			
+			// PB8, PB9 (MOTOR_A)
+			GPIO_InitStructure.GPIO_Pin = GPIO_Pin_8 | GPIO_Pin_9;
+			GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;  // ��ͨOUT��PWM
+			GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+			GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
+			GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+			GPIO_Init(GPIOB, &GPIO_InitStructure);
+			
+			// PE5, PE6 (MOTOR_B)
+			GPIO_InitStructure.GPIO_Pin = GPIO_Pin_5 | GPIO_Pin_6;
+			GPIO_Init(GPIOE, &GPIO_InitStructure);
+			
+			// ǿ���͸�ʹ�ܵ��������� PB8��PE5����
+			GPIO_SetBits(GPIOB, GPIO_Pin_8);  // MOTOR_A ��ת
+			GPIO_ResetBits(GPIOB, GPIO_Pin_9); // MOTOR_A ��ת��0
+			GPIO_SetBits(GPIOE, GPIO_Pin_5);  // MOTOR_B ��ת
+			GPIO_ResetBits(GPIOE, GPIO_Pin_6); // MOTOR_B ��ת��0
+		}
+		#else
+		// PWMģʽ���ܵ��ٿ���
 		TIM1_PWM_Init(16799,0);
 		TIM9_PWM_Init(16799,0);
 		TIM10_PWM_Init(16799,0);
 		TIM11_PWM_Init(16799,0);
+		
+		// ȷ���ʱ����������
+		TIM_Cmd(TIM1, ENABLE);
+		TIM_Cmd(TIM9, ENABLE);
+		TIM_Cmd(TIM10, ENABLE);
+		TIM_Cmd(TIM11, ENABLE);
+		
+		// ��������ʱ���Ҫ����Ҫʹ��
+		TIM_CtrlPWMOutputs(TIM1, ENABLE);
+		
+		// ��ʼ��PWMֵΪ0���ٵ��
+		TIM10->CCR1 = 0;
+		TIM11->CCR1 = 0;
+		TIM9->CCR1 = 0;
+		TIM9->CCR2 = 0;
+		#endif
 		 							
 }
 
